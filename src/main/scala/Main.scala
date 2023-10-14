@@ -1,20 +1,21 @@
+import upickle.default._
+
 object Main {
   def main(args: Array[String]): Unit = {
-    println("Hello!")
-    val commandRoot = ASTRandomizer.randomAST(maxDepth = 6)
-    val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
-    val circuit = generateCircuit(commandRoot, externalNodes)
-    val cleanCirc = circuit.cleanCircuit(externalNodes)
-    println("AST:")
-    println(commandRoot.toJson.toString())
-    println("Generated SPICE:")
-    println(circuit.toSpice)
-    println("Cleaned-up SPICE:")
-    println(cleanCirc.toSpice)
-    //    val spiceSchematic = generateSpice(circuit)
-  }
-  def generateCircuit(astRoot: ASTNode, externalNodes: Seq[CircuitNode]) : Circuit = {
-    val w1 = CircuitWire(nodes = externalNodes)
-    w1.applyCommand(astRoot)
+    println("Gaia: Electronic Circuit Evolution")
+    println("==================================")
+    val pop = Population.initialPopulation()
+    pop.writeToFile("population0.json")
+    val endNode = ASTEnd()
+    println(s"endNode = ${write(endNode)}")
+    println(s"node = ${write(ASTNumericConstant(12))}")
+    println(s"node = ${write(ASTParallel(cConsA = endNode, cConsB = endNode))}")
+    println(s"node = ${write(ASTSeries(cConsA = endNode, cConsB = endNode))}")
+    println(s"node = ${write(ASTCapacitor(cCons = endNode, valCons=ASTNumericConstant(3)))}")
+    println(s"node = ${write(ASTResistor(cCons = endNode, valCons=ASTNumericConstant(3)))}")
+    val resistorNode = ASTResistor(cCons = endNode, valCons=ASTNumericConstant(3))
+    println(s"node = ${write(ASTThreeGND(aCons = resistorNode, bCons = resistorNode, gndCons = resistorNode))}")
+
+    //val popjson =  pop.members.head
   }
 }
