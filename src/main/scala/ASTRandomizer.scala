@@ -19,7 +19,7 @@ object ASTRandomizer {
 				(10, Operation.Series),
 				(5, Operation.ThreeGND))
 			val totalWeight = operations.foldLeft(0)((accum, weightedOp) => accum + weightedOp._1)
-			val selProb = scala.util.Random.nextFloat()*totalWeight;
+			val selProb = scala.util.Random.nextFloat()*totalWeight
 
 			var accumWeight = 0
 			var selectedWeightedOp = operations.find(wop => {
@@ -38,7 +38,7 @@ object ASTRandomizer {
 			)
 			case Operation.Capacitor => ASTCapacitor(
 				cCons = randomAST(maxDepth - 1),
-				valCons = randomNumericNode(minValue = 0, maxValue = 8)
+				valCons = randomNumericNode(maxValue = 8)
 			)
 			case Operation.Parallel => ASTParallel(
 				cConsA = randomAST(maxDepth - 1),

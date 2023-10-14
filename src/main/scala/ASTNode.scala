@@ -135,7 +135,7 @@ class ASTEnd extends ASTNode {
 }
 
 object ASTEnd {
-	def apply() = new ASTEnd;
+	def apply() = new ASTEnd
 	implicit val rw: ReadWriter[ASTEnd] = macroRW
 }
 
