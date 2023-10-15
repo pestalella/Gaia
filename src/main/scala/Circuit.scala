@@ -115,17 +115,22 @@ class Circuit(
 			}
 		).tail
 	}
+
+	def toUndecoratedSpice: String = {
+		(for {
+			component <- components
+		} yield {
+			component.toSpice
+		}).mkString("\n")
+	}
+
 	def toSpice: String = {
 		Seq(
 			s".TITLE TEST CIRCUIT $circuitNumber",
 			"",
 			"VIN A 0 DC 0 AC 1",
 			"RLOAD B 0 1k",
-			(for {
-				component <- components
-			} yield {
-				component.toSpice
-			}).mkString("\n"),
+			toUndecoratedSpice,
 			".AC DEC 20 10 100k",
 			".PRINT AC V(B)",
 			".OPTION NOACCT",
