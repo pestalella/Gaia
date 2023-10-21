@@ -5,11 +5,15 @@ class Circuit(
 	val nodes: Seq[CircuitNode],
 	val components: Seq[CircuitComponent],
 	val circuitNumber: Int) {
-	def combined(rhs: Circuit): Circuit = new Circuit(
-		nodes = (nodes ++ rhs.nodes).distinct,
-		components = components ++ rhs.components,
-		circuitNumber = circuitNumber
-	)
+	def combined(rhs: Circuit): Circuit = {
+		val newCirc = new Circuit(
+			nodes = (nodes ++ rhs.nodes).distinct,
+			components = components ++ rhs.components,
+			circuitNumber = circuitNumber
+		)
+		assert(newCirc.nodes.size < 50, s"Too many nodes! resulting circuit has ${newCirc.nodes.size}")
+		newCirc
+	}
 	def cleanCircuit(externalNodes: Seq[CircuitNode]): Circuit = {
 		// Remove wires, unifying the nodes they are attached to
 		val wires = components collect { case w: CircuitWire => w }

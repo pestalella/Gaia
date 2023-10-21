@@ -1,11 +1,19 @@
 import upickle.default._
 
-import scala.runtime.Nothing$
-
 sealed trait ASTNode {
 	def nodeCount: Int
+
+	def height: Int
+
 	def getNthSubtree(subtree: Int): ASTNode
+
 	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode
+
+	def mutate(mutationPoint: Int): ASTNode
+
+	def coinFlip(trueProb: Float): Boolean = {
+		scala.util.Random.nextFloat() <= trueProb
+	}
 }
 object ASTNode{
   implicit val rw: ReadWriter[ASTNode] = ReadWriter.merge(
@@ -14,45 +22,16 @@ object ASTNode{
 		ASTParallel.rw,
 		ASTSeries.rw,
 		ASTThreeGND.rw,
-		ASTNumericNode.rw,
-		ASTNumericConstant.rw,
 		ASTEnd.rw
 	)
 }
 
-trait ASTNumericNode extends ASTNode {
-	def eval: Float
-}
-
-object ASTNumericNode {
-	//	implicit val rw: ReadWriter[ASTNumericNode] = macroRW
-	//implicit def rw[T: ReadWriter]: ReadWriter[ASTNumericNode] = macroRW
-	implicit val rw: ReadWriter[ASTNumericNode] = ReadWriter.merge(ASTNumericConstant.rw)
-}
-
-case class ASTNumericConstant(value: Float) extends ASTNumericNode {
-	def eval: Float = value
-	override def nodeCount: Int = 0
-	def getNthSubtree(subtree: Int): ASTNode = {
-		this
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-			this
-}
-
-object ASTNumericConstant {
-	def apply(v: Float): ASTNumericConstant = new ASTNumericConstant(v)
-
-	//implicit def rw[T: ReadWriter]: ReadWriter[ASTNumericConstant] = macroRW
-	implicit val rw: ReadWriter[ASTNumericConstant] = macroRW
-}
-
 case class ASTCapacitor(
 	cCons: ASTNode,
-	valCons: ASTNumericNode
+	value: Float
 ) extends ASTNode {
 	override def nodeCount: Int = 1 + cCons.nodeCount
+	override def height: Int = 1 + cCons.height
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
@@ -69,8 +48,30 @@ case class ASTCapacitor(
 		else
 			this.copy(
 				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
-				valCons = valCons
+				value = value
 			)
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node, with some change in the value
+			if (coinFlip(.9f)) {
+				// Add or subtract at most 10% of the value
+				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height)
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= cCons.nodeCount)
+				this.copy(
+					cCons = cCons.mutate(mutationPoint - 1),
+					value = value
+				)
+			else
+				this
+		}
+	}
 }
 
 object ASTCapacitor {
@@ -79,9 +80,10 @@ object ASTCapacitor {
 
 case class ASTResistor(
 	cCons: ASTNode,
-	valCons: ASTNumericNode
+	value: Float
 ) extends ASTNode {
 	override def nodeCount: Int = 1 + cCons.nodeCount
+	override def height: Int = 1 + cCons.height
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
@@ -98,8 +100,30 @@ case class ASTResistor(
 		else
 			this.copy(
 				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
-				valCons = valCons
+				value = value
 			)
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node, with some change in the value
+			if (coinFlip(.9f)) {
+				// Add or subtract at most 10% of the value
+				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height)
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= cCons.nodeCount)
+				this.copy(
+					cCons = cCons.mutate(mutationPoint - 1),
+					value = value
+				)
+			else
+				this
+		}
+	}
 }
 
 object ASTResistor {
@@ -112,6 +136,7 @@ case class ASTThreeGND(
 	gndCons: ASTNode
 ) extends ASTNode {
 	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount
+	override def height: Int = 1 + scala.math.max(scala.math.max(aCons.height, bCons.height), gndCons.height)
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
@@ -123,7 +148,7 @@ case class ASTThreeGND(
 		else if (subtree <= aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount)
 		  gndCons.getNthSubtree(subtree - 1 - aCons.nodeCount - bCons.nodeCount)
 		else {
-			assert(false, "Got asked for a non-existent subtree")
+			assert(assertion = false, "Got asked for a non-existent subtree")
 			this
 		}
 	}
@@ -140,6 +165,34 @@ case class ASTThreeGND(
 				gndCons = gndCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - bCons.nodeCount - 1)
 			)
 		}
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node
+			if (coinFlip(.8f)) {
+				this
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height)
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= aCons.nodeCount)
+				this.copy(
+					aCons = aCons.mutate(mutationPoint - 1)
+				)
+			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
+				this.copy(
+					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
+				)
+			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount)
+				this.copy(
+					gndCons = gndCons.mutate(mutationPoint - aCons.nodeCount - bCons.nodeCount - 1)
+				)
+			else
+				this
+		}
+	}
 }
 
 object ASTThreeGND {
@@ -151,6 +204,7 @@ case class ASTParallel(
 	bCons: ASTNode
 ) extends ASTNode {
 	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount
+	override def height: Int = 1 + scala.math.max(aCons.height, bCons.height)
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
@@ -160,7 +214,7 @@ case class ASTParallel(
 		else if (subtree <= aCons.nodeCount + bCons.nodeCount)
 			bCons.getNthSubtree(subtree - 1 - aCons.nodeCount)
 		else {
-			assert(false, "Got asked for a non-existent subtree")
+			assert(assertion = false, "Got asked for a non-existent subtree")
 			this
 		}
 	}
@@ -176,6 +230,30 @@ case class ASTParallel(
 				bCons = bCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - 1)
 			)
 		}
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node
+			if (coinFlip(.8f)) {
+				this
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height)
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= aCons.nodeCount)
+				this.copy(
+					aCons = aCons.mutate(mutationPoint - 1)
+				)
+			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
+				this.copy(
+					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
+				)
+			else
+				this
+		}
+	}
 }
 
 object ASTParallel {
@@ -187,6 +265,7 @@ case class ASTSeries(
 	bCons: ASTNode
 ) extends ASTNode {
 	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount
+	override def height: Int = 1 + scala.math.max(aCons.height, bCons.height)
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
@@ -196,7 +275,7 @@ case class ASTSeries(
 		else if (subtree <= aCons.nodeCount + bCons.nodeCount)
 			bCons.getNthSubtree(subtree - 1 - aCons.nodeCount)
 		else {
-			assert(false, "Got asked for a non-existent subtree")
+			assert(assertion = false, "Got asked for a non-existent subtree")
 			this
 		}
 	}
@@ -211,6 +290,30 @@ case class ASTSeries(
 				aCons = aCons.withInsertion(toInsert, insertionPoint - 1),
 				bCons = bCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - 1)
 			)
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node
+			if (coinFlip(.8f)) {
+				this
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height)
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= aCons.nodeCount)
+				this.copy(
+					aCons = aCons.mutate(mutationPoint - 1)
+				)
+			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
+				this.copy(
+					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
+				)
+			else
+				this
+		}
+	}
 }
 
 object ASTSeries {
@@ -219,12 +322,13 @@ object ASTSeries {
 
 class ASTEnd extends ASTNode {
 	override def nodeCount: Int = 1
+	override def height: Int = 1
 
 	def getNthSubtree(subtree: Int): ASTNode = {
 		if (subtree == 0)
 			this
 		else {
-			assert(false, "Got asked for a non-existent subtree")
+			assert(assertion = false, "Got asked for a non-existent subtree")
 			this
 		}
 	}
@@ -236,6 +340,19 @@ class ASTEnd extends ASTNode {
 			this
 
 	override def toString: String = "ASTEnd"
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return this same node
+			if (coinFlip(.9f)) {
+				this
+			} else {
+				// Or return a whole new tree
+				ASTRandomizer.randomAST(height + 1)
+			}
+		} else
+				this
+		}
 }
 
 object ASTEnd {

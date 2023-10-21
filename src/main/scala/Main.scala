@@ -10,8 +10,12 @@ object Main {
     for (_ <- 1 to 100) {
       pop = pop.nextGeneration()
     }
+    printPopulationStatistics(pop)
     pop.writeToFile("population.json")
+  }
 
-    //val popjson =  pop.members.head
+  private def printPopulationStatistics(pop: Population): Unit = {
+    val sortedPop = pop.measurePopulationFitness()
+    println(s"Best individual:\n${sortedPop.head}")
   }
 }

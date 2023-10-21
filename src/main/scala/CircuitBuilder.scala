@@ -6,14 +6,14 @@ object CircuitBuilder {
 			case cmd: ASTParallel => applyCommand(comp, cmd)
 			case cmd: ASTSeries => applyCommand(comp, cmd)
 			case cmd: ASTThreeGND => applyCommand(comp, cmd)
-			case cmd: ASTEnd => applyCommand(comp, cmd)
+			case _: ASTEnd => applyCommand(comp)
 		}
 	}
 	def applyCommand(comp: CircuitComponent, cmd: ASTCapacitor): Circuit = {
 		applyCommand(
 			CircuitCapacitor(
 				Seq(comp.nodes.head, comp.nodes.last),
-				value = cmd.valCons.eval
+				value = cmd.value
 			),
 			cmd.cCons)
 	}
@@ -21,7 +21,7 @@ object CircuitBuilder {
 		applyCommand(
 			CircuitResistor(
 				Seq(comp.nodes.head, comp.nodes.last),
-				value = cmd.valCons.eval
+				value = cmd.value
 			),
 			cmd.cCons)
 	}
@@ -45,7 +45,7 @@ object CircuitBuilder {
 		val gnd = applyCommand(CircuitWire(Seq(midNode, gndNode)), cmd.gndCons)
 		lhs.combined(rhs).combined(gnd)
 	}
-	def applyCommand(comp: CircuitComponent, cmd: ASTEnd): Circuit =
+	def applyCommand(comp: CircuitComponent): Circuit =
 		Circuit(nodes = comp.nodes, components = Seq(comp))
 }
 

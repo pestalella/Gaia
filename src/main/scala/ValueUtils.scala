@@ -1,5 +1,5 @@
 object ValueUtils {
-	def valueToE12Value(value: Double): String = {
+	private def valueToE12Value(value: Double): String = {
 		val siPrefixes = Seq("p", "n", "u", "m", "", "k", "Meg")
 
 		val integerPart = scala.math.floor(value)

@@ -1,15 +1,19 @@
 import upickle.default._
 
-import java.io.{File, PrintWriter}
+import java.io.PrintWriter
 
 case class Population(members: Seq[PopulationMember]) {
-	def nextGeneration(): Population = {
-		val measuredPopulation = members map (c =>
+	def measurePopulationFitness(): Seq[PopulationMember] = {
+		members map (c =>
 			PopulationMember(
 				circuit = c.circuit,
 				generator = c.generator,
 				fitness = c.circuit.calcFitness()
-			))
+			)
+		) sortWith ((a, b) => a.fitness < b.fitness)
+	}
+	def nextGeneration(): Population = {
+		val measuredPopulation = measurePopulationFitness()
 		Population.nextPopulation(measuredPopulation)
 	}
 
@@ -29,7 +33,7 @@ object Population {
 
 	def initialPopulation(): Population = {
 		Population(for {
-			i <- 0 until 100
+			_ <- 0 until 100
 		} yield {
 			val generator = ASTRandomizer.randomAST(maxDepth = 6)
 			PopulationMember(
@@ -57,28 +61,32 @@ object Population {
 		}).get
 	}
 
-	private def nextPopulation(measuredPopulation: Seq[PopulationMember]): Population = {
-		val sortedPop = measuredPopulation.sortWith((a, b) => a.fitness < b.fitness)
-		println(s"fitness: ${sortedPop.head.fitness}\ncircuit: ${sortedPop.head.circuit.toSpice}")
+	private def nextPopulation(sortedPop: Seq[PopulationMember]): Population = {
+		println(s"fitness: ${sortedPop.head.fitness}")
+		println(s"pop size: ${sortedPop.size}")
 		val accummulatedFitness = sortedPop.tail.scanLeft(sortedPop.head.copy(fitness = 1.0 / sortedPop.head.fitness))(
 			(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
-		val newPop = (for (_ <- 1 until sortedPop.size / 2) yield {
+		val newPop = (for (_ <- 1 until sortedPop.size / 2+1) yield {
 			val parent1 = Population.selectMember(accummulatedFitness)
 			val parent2 = Population.selectMember(accummulatedFitness)
-			val Seq(child1, child2) = ASTCrossover.crossover(parent1.generator, parent2.generator)
+			val Seq(candidate1, candidate2) = ASTOperations.crossover(parent1.generator, parent2.generator)
+			val child1 = ASTOperations.mutate(candidate1)
+			val child2 = ASTOperations.mutate(candidate2)
+			val member1 = if (child1.nodeCount > 50) parent1.generator else child1
+			val member2 = if (child2.nodeCount > 50) parent2.generator else child2
 			Seq(
 				PopulationMember(
-					circuit = generateCircuit(child1),
+					circuit = generateCircuit(member1),
 					fitness = 0,
-					generator = child1
+					generator = member1
 				),
 				PopulationMember(
-					circuit = generateCircuit(child2),
+					circuit = generateCircuit(member2),
 					fitness = 0,
-					generator = child2
+					generator = member2
 				)
 			)
-		}).flatten :+ sortedPop.head
+		}).flatten.tail :+ sortedPop.head
 		Population(newPop)
 
 	}

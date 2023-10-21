@@ -34,7 +34,7 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 
 	test(testName = "Circuit.fromWireToResistor") {
 		val w1 = CircuitWire(nodes = Seq(CircuitNode("A"), CircuitNode("B")))
-		val command = ASTResistor(cCons = ASTEnd(), valCons = ASTNumericConstant(11))
+		val command = ASTResistor(cCons = ASTEnd(), value = 11)
 		val circuit = CircuitBuilder.applyCommand(w1, command)
 		assert(circuit.toUndecoratedSpice == "R1 A B 1")
 	}
@@ -42,8 +42,8 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 	test(testName = "Circuit.fromWireToParallelResistors") {
 		val w1 = CircuitWire(nodes = Seq(CircuitNode("A"), CircuitNode("B")))
 		val command = ASTParallel(
-			aCons = ASTResistor(cCons = ASTEnd(), valCons = ASTNumericConstant(11)),
-			bCons = ASTResistor(cCons = ASTEnd(), valCons = ASTNumericConstant(13)))
+			aCons = ASTResistor(cCons = ASTEnd(), value = 11),
+			bCons = ASTResistor(cCons = ASTEnd(), value = 13))
 		val circuit = CircuitBuilder.applyCommand(w1, command)
 		assert(circuit.toUndecoratedSpice == "R1 A B 1\nR2 A B 100")
 	}
@@ -51,22 +51,22 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 	test(testName = "Circuit.fromWireToParallelCapacitors") {
 		val w1 = CircuitWire(nodes = Seq(CircuitNode("A"), CircuitNode("B")))
 		val command = ASTParallel(
-			aCons = ASTCapacitor(cCons = ASTEnd(), valCons = ASTNumericConstant(1)),
-			bCons = ASTCapacitor(cCons = ASTEnd(), valCons = ASTNumericConstant(2)))
+			aCons = ASTCapacitor(cCons = ASTEnd(), value = 1),
+			bCons = ASTCapacitor(cCons = ASTEnd(), value = 2))
 		val circuit = CircuitBuilder.applyCommand(w1, command)
 		assert(circuit.toUndecoratedSpice == "C1 A B 100pF\nC2 A B 1nF")
 	}
 
 	test(testName = "Circuit.fromCapacitorToResistor") {
 		val c1 = CircuitCapacitor(nodes = Seq(CircuitNode("A"), CircuitNode("B")), 23)
-		val command = ASTResistor(cCons = ASTEnd(), valCons = ASTNumericConstant(14.0f))
+		val command = ASTResistor(cCons = ASTEnd(), value = 14)
 		val circuit = CircuitBuilder.applyCommand(c1, command)
 		assert(circuit.toUndecoratedSpice == "R1 A B 1k")
 	}
 
 	test(testName = "Circuit.fromResistorToCapacitor") {
 		val r1 = CircuitResistor(nodes = Seq(CircuitNode("A"), CircuitNode("B")), 23)
-		val command = ASTCapacitor(cCons = ASTEnd(), valCons = ASTNumericConstant(2.0f))
+		val command = ASTCapacitor(cCons = ASTEnd(), value = 2)
 		val circuit = CircuitBuilder.applyCommand(r1, command)
 		assert(circuit.toUndecoratedSpice == "C1 A B 1nF")
 	}
