@@ -26,14 +26,14 @@ object CircuitBuilder {
 			cmd.cCons)
 	}
 	def applyCommand(comp: CircuitComponent, cmd: ASTParallel): Circuit = {
-			val lhs = applyCommand(comp, cmd.cConsA)
-			val rhs = applyCommand(comp.copy(comp.nodes), cmd.cConsB)
+			val lhs = applyCommand(comp, cmd.aCons)
+			val rhs = applyCommand(comp.copy(comp.nodes), cmd.bCons)
 			lhs.combined(rhs)
 	}
 	def applyCommand(comp: CircuitComponent, cmd: ASTSeries): Circuit = {
 			val midNode = comp.nodes.head.combined(comp.nodes.last)
-			val lhs = applyCommand(comp.copy(nodes = Seq(comp.nodes.head, midNode)), cmd.cConsA)
-			val rhs = applyCommand(comp.copy(Seq(midNode, comp.nodes.last)),cmd.cConsB)
+			val lhs = applyCommand(comp.copy(nodes = Seq(comp.nodes.head, midNode)), cmd.aCons)
+			val rhs = applyCommand(comp.copy(Seq(midNode, comp.nodes.last)),cmd.bCons)
 			lhs.combined(rhs)
 	}
 

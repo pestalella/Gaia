@@ -65,7 +65,7 @@ class Circuit(
 				fitAccum + scala.math.pow(1.0 - dataPoint.magnitude, 2.0)
 			else
 				fitAccum + scala.math.pow(dataPoint.magnitude, 2.0)
-		)
+		) + (components.size*0.1)
 	}
 	private def simulateCircuit(): String = {
 		writeCircuit()

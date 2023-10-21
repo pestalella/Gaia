@@ -41,12 +41,12 @@ object ASTRandomizer {
 				valCons = randomNumericNode(maxValue = 8)
 			)
 			case Operation.Parallel => ASTParallel(
-				cConsA = randomAST(maxDepth - 1),
-				cConsB = randomAST(maxDepth - 1)
+				aCons = randomAST(maxDepth - 1),
+				bCons = randomAST(maxDepth - 1)
 			)
 			case Operation.Series => ASTSeries(
-				cConsA = randomAST(maxDepth - 1),
-				cConsB = randomAST(maxDepth - 1)
+				aCons = randomAST(maxDepth - 1),
+				bCons = randomAST(maxDepth - 1)
 			)
 			case Operation.ThreeGND => ASTThreeGND(
 				aCons = randomAST(maxDepth - 1),
