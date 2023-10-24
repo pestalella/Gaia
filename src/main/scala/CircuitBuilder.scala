@@ -3,6 +3,7 @@ object CircuitBuilder {
 		genericCommand match {
 			case cmd: ASTCapacitor => applyCommand(comp, cmd)
 			case cmd: ASTResistor => applyCommand(comp, cmd)
+			case cmd: ASTInductor => applyCommand(comp, cmd)
 			case cmd: ASTParallel => applyCommand(comp, cmd)
 			case cmd: ASTSeries => applyCommand(comp, cmd)
 			case cmd: ASTThreeGND => applyCommand(comp, cmd)
@@ -25,6 +26,16 @@ object CircuitBuilder {
 			),
 			cmd.cCons)
 	}
+
+	def applyCommand(comp: CircuitComponent, cmd: ASTInductor): Circuit = {
+		applyCommand(
+			CircuitInductor(
+				Seq(comp.nodes.head, comp.nodes.last),
+				value = cmd.value
+			),
+			cmd.cCons)
+	}
+
 	def applyCommand(comp: CircuitComponent, cmd: ASTParallel): Circuit = {
 			val lhs = applyCommand(comp, cmd.aCons)
 			val rhs = applyCommand(comp.copy(comp.nodes), cmd.bCons)

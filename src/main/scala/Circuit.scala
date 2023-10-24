@@ -1,4 +1,5 @@
 import java.io.{File, PrintWriter}
+import scala.util.{Try, Failure, Success}
 import upickle.default.{ReadWriter, macroRW}
 
 class Circuit(
@@ -11,7 +12,6 @@ class Circuit(
 			components = components ++ rhs.components,
 			circuitNumber = circuitNumber
 		)
-		assert(newCirc.nodes.size < 50, s"Too many nodes! resulting circuit has ${newCirc.nodes.size}")
 		newCirc
 	}
 	def cleanCircuit(externalNodes: Seq[CircuitNode]): Circuit = {
@@ -62,23 +62,60 @@ class Circuit(
 	}
 	def calcFitness(): Double = {
 		val simResult = simulateCircuit()
-		val simData = parseSimResult(simResult)
-		val cutOffFreq = 2000.0; // 2 kHz
-		simData.foldLeft(0.0)((fitAccum, dataPoint) =>
-			if (dataPoint.frequency < cutOffFreq)
-				fitAccum + scala.math.pow(1.0 - dataPoint.magnitude, 2.0)
+		if (simResult.isEmpty)
+			1E10
+		else {
+			val simData = parseSimResult(simResult)
+			val dbData = simData map (dataPoint => {
+				val dbMagnitude = 20*scala.math.log10(dataPoint.magnitude + 0.00001)
+				SimDataPoint(
+					frequency = dataPoint.frequency,
+					magnitude = if (dbMagnitude.isNaN) 1E10 else dbMagnitude,
+					phase = dataPoint.phase)
+			})
+			dbData.foldLeft(0.0)((fitAccum, dataPoint) => fitAccum + dataPointFitness(dataPoint)) +
+				(components.size * 0.1)
+		}
+	}
+	private def dataPointFitness(simDataPoint: SimDataPoint): Double = {
+		val hiCutOffFreq = 2000.0
+		val lowCutOffFreq = 0.0
+		if (lowCutOffFreq < simDataPoint.frequency && simDataPoint.frequency < hiCutOffFreq) {
+			if (scala.math.abs(simDataPoint.magnitude) < 0.0001)
+				0
+			else if (scala.math.abs(simDataPoint.magnitude) < 0.6)
+				scala.math.abs(simDataPoint.magnitude) * 10
 			else
-				fitAccum + scala.math.pow(dataPoint.magnitude, 2.0)
-		) + (components.size*0.1)
+				scala.math.abs(simDataPoint.magnitude) * 100
+		} else {
+			if (simDataPoint.magnitude < -120.0)
+				0
+			else if (simDataPoint.magnitude < -60.0)
+				scala.math.abs(-60 - simDataPoint.magnitude)
+			else
+				scala.math.abs(-120 - simDataPoint.magnitude) * 10
+		}
+		//scala.math.pow((dataPoint.magnitude - 1.0) * 10, 2.0)
+//		else
+//			fitAccum + scala.math.pow(dataPoint.magnitude * 10, 2.0)
+//		) +(components.size * 0.1)
+
 	}
 	private def simulateCircuit(): String = {
 		writeCircuit()
 		import scala.sys.process._
 		val simCommand = s"ngspice  -b test_$circuitNumber.cir"
-		val output = simCommand.!!(ProcessLogger(_ => ()))
-		new File(s"test_$circuitNumber.cir").delete()
-		output
+		val result = Try { simCommand.!!(ProcessLogger(_ => ()))}
+  	result match {
+	    case Failure(e) =>
+				println(s"Circuit $circuitNumber failed to run on ngspice. Error was:\n${e.getMessage}")
+				""
+  	  case Success(output) =>
+				new File(s"test_$circuitNumber.cir").delete()
+				output
+  	}
 	}
+
 	private def writeCircuit(): Unit = {
 		new PrintWriter(s"test_$circuitNumber.cir") {
 			write(toSpice)
@@ -108,8 +145,6 @@ class Circuit(
 					} else {
 						val stringDataComponents = line.split("\\s+")
 						val cleanDataComponents = stringDataComponents map (d => if (d.contains(",")) d.init else d)
-						//          println(s"data: ${dataComponents.mkString(":")}")
-						//          println(s"index: ${dataComponents(0)} freq: ${dataComponents(1)}  mag: ${dataComponents(2)} phase: ${dataComponents(3)}")
 						dataPoints :+ SimDataPoint(
 							frequency = cleanDataComponents(1).toDouble,
 							magnitude = cleanDataComponents(2).toDouble,
@@ -135,12 +170,39 @@ class Circuit(
 			"VIN A 0 DC 0 AC 1",
 			"RLOAD B 0 1k",
 			toUndecoratedSpice,
-			".AC DEC 20 10 100k",
+			s".AC DEC ${Parameters.simulationDataPoints} 10 200k",
 			".PRINT AC V(B)",
 			".OPTION NOACCT",
 			".END"
 		).mkString("\n")
 	}
+
+	def toSpicePlot: String = {
+		Seq(
+			s".TITLE TEST CIRCUIT $circuitNumber",
+			"",
+			"VIN A 0 DC 0 AC 1",
+			"RLOAD B 0 1k",
+			toUndecoratedSpice,
+			".AC DEC 1 10 100",
+			".PRINT AC V(B)",
+			".CONTROL",
+			s"AC DEC ${Parameters.simulationDataPoints} 10 200k",
+			"GNUPLOT circuitV db(B)",
+			"GNUPLOT circuitDB V(B)",
+			"OPTION NOACCT",
+			".ENDC",
+			".END"
+		).mkString("\n")
+	}
+
+	def writeToFile(fileName: String): Unit = {
+		new PrintWriter(fileName) {
+			write(toSpice)
+			close()
+		}
+	}
+
 }
 
 object Circuit {
@@ -148,6 +210,9 @@ object Circuit {
 	def apply(nodes: Seq[CircuitNode], components: Seq[CircuitComponent], dummy:Int = 0): Circuit = {
 		circuitCount += 1
 		new Circuit(nodes = nodes, components= components, circuitNumber = circuitCount)
+	}
+	def reset(): Unit = {
+		circuitCount = 0
 	}
 
 	implicit val rw: ReadWriter[Circuit] = macroRW

@@ -19,6 +19,7 @@ object ASTNode{
   implicit val rw: ReadWriter[ASTNode] = ReadWriter.merge(
 		ASTCapacitor.rw,
 		ASTResistor.rw,
+		ASTInductor.rw,
 		ASTParallel.rw,
 		ASTSeries.rw,
 		ASTThreeGND.rw,
@@ -53,13 +54,11 @@ case class ASTCapacitor(
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node, with some change in the value
-			if (coinFlip(.9f)) {
-				// Add or subtract at most 10% of the value
-				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
-			} else {
-				// Or return a whole new tree
+			// Either return a whole new tree or this same node slightly mutated in value
+			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
+			} else {
+				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
 			}
 		} else {
 			// This is not the point we wanted to mutate
@@ -105,13 +104,11 @@ case class ASTResistor(
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node, with some change in the value
-			if (coinFlip(.9f)) {
-				// Add or subtract at most 10% of the value
-				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
-			} else {
-				// Or return a whole new tree
+			// Either return a whole new tree or this same node slightly mutated in value
+			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
+			} else {
+				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
 			}
 		} else {
 			// This is not the point we wanted to mutate
@@ -128,6 +125,56 @@ case class ASTResistor(
 
 object ASTResistor {
 	implicit val rw: ReadWriter[ASTResistor] = macroRW
+}
+
+case class ASTInductor(
+	cCons: ASTNode,
+	value: Float
+) extends ASTNode {
+	override def nodeCount: Int = 1 + cCons.nodeCount
+	override def height: Int = 1 + cCons.height
+
+	def getNthSubtree(subtree: Int): ASTNode = {
+		if (subtree == 0)
+			this
+		else
+			cCons.getNthSubtree(subtree - 1)
+	}
+
+	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
+		if (insertionPoint == 0)
+			toInsert
+		else if (insertionPoint < 0)
+			this
+		else
+			this.copy(
+				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
+				value = value
+			)
+
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return a whole new tree or this same node slightly mutated in value
+			if (coinFlip(Parameters.mutationRate)) {
+				ASTRandomizer.randomAST(height)
+			} else {
+				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+			}
+		} else {
+			// This is not the point we wanted to mutate
+			if (mutationPoint - 1 <= cCons.nodeCount)
+				this.copy(
+					cCons = cCons.mutate(mutationPoint - 1),
+					value = value
+				)
+			else
+				this
+		}
+	}
+}
+
+object ASTInductor {
+	implicit val rw: ReadWriter[ASTInductor] = macroRW
 }
 
 case class ASTThreeGND(
@@ -168,12 +215,11 @@ case class ASTThreeGND(
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node
-			if (coinFlip(.8f)) {
-				this
-			} else {
-				// Or return a whole new tree
+			// Either return a whole new tree or this same node
+			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
+			} else {
+				this
 			}
 		} else {
 			// This is not the point we wanted to mutate
@@ -233,15 +279,14 @@ case class ASTParallel(
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node
-			if (coinFlip(.8f)) {
-				this
-			} else {
-				// Or return a whole new tree
+			// Either return a whole new tree or this same node
+			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
+			} else {
+				this
 			}
 		} else {
-			// This is not the point we wanted to mutate
+			// This is not the point we wanted to mutate, go deeper
 			if (mutationPoint - 1 <= aCons.nodeCount)
 				this.copy(
 					aCons = aCons.mutate(mutationPoint - 1)
@@ -250,8 +295,10 @@ case class ASTParallel(
 				this.copy(
 					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
 				)
-			else
+			else {
+				// Nope, the mutation point is outside this subtree
 				this
+			}
 		}
 	}
 }
@@ -293,12 +340,11 @@ case class ASTSeries(
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node
-			if (coinFlip(.8f)) {
-				this
-			} else {
-				// Or return a whole new tree
+			// Either return a whole new tree or this same node
+			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
+			} else {
+				this
 			}
 		} else {
 			// This is not the point we wanted to mutate
@@ -343,12 +389,12 @@ class ASTEnd extends ASTNode {
 
 	def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
-			// Either return this same node
-			if (coinFlip(.9f)) {
-				this
-			} else {
-				// Or return a whole new tree
+			if (coinFlip(Parameters.mutationRate)) {
+				// Either return a whole new tree
 				ASTRandomizer.randomAST(height + 1)
+			} else {
+				// Or return this same node
+				this
 			}
 		} else
 				this

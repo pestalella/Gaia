@@ -1,6 +1,6 @@
 object ValueUtils {
 	private def valueToE12Value(value: Double): String = {
-		val siPrefixes = Seq("p", "n", "u", "m", "", "k", "Meg")
+		val siPrefixes = Seq("p", "n", "u", "m", "", "k", "Meg", "G")
 
 		val integerPart = scala.math.floor(value)
 		val decimalPart = value - integerPart
@@ -18,4 +18,7 @@ object ValueUtils {
 	def valueToResistorValue(value: Double): String = {
 		valueToE12Value(value)
 	}
-}
+
+	def valueToInductorValue(value: Double): String = {
+		valueToE12Value(value) + "H"
+	}}

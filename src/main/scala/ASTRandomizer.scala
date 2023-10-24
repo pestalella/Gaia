@@ -1,7 +1,7 @@
 object ASTRandomizer {
 	private object Operation extends Enumeration {
 		type Operation = Value
-		val Resistor, Capacitor, Parallel, Series, ThreeGND  = Value
+		val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND  = Value
 }
 	private def randomNumericConstant(minValue: Float = 0, maxValue: Float = 1): Float = {
 			scala.util.Random.nextFloat()*(maxValue-minValue) + minValue
@@ -13,9 +13,10 @@ object ASTRandomizer {
 			val operations = Seq(
 				(10, Operation.Resistor),
 				(10, Operation.Capacitor),
+				(10, Operation.Inductor),
 				(10, Operation.Parallel),
 				(10, Operation.Series),
-				(5, Operation.ThreeGND))
+				(10, Operation.ThreeGND))
 			val totalWeight = operations.foldLeft(0)((accum, weightedOp) => accum + weightedOp._1)
 			val selProb = scala.util.Random.nextFloat()*totalWeight
 
@@ -24,7 +25,7 @@ object ASTRandomizer {
 				accumWeight = accumWeight+wop._1
 				accumWeight > selProb}
 			).get
- 			createNode(selectedWeightedOp._2, maxDepth)
+ 			createNode(selectedWeightedOp._2, maxDepth - 1)
 		}
 	}
 
@@ -37,6 +38,10 @@ object ASTRandomizer {
 			case Operation.Capacitor => ASTCapacitor(
 				cCons = randomAST(maxDepth - 1),
 				value = randomNumericConstant(maxValue = 8)
+			)
+			case Operation.Inductor => ASTInductor(
+				cCons = randomAST(maxDepth - 1),
+				value = randomNumericConstant(minValue = 3, maxValue = 11)
 			)
 			case Operation.Parallel => ASTParallel(
 				aCons = randomAST(maxDepth - 1),

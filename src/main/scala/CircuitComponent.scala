@@ -17,7 +17,8 @@ object CircuitComponent {
 	implicit val rw: ReadWriter[CircuitComponent] = ReadWriter.merge(
 		CircuitCapacitor.rw,
  		CircuitResistor.rw,
-		CircuitWire.rw,
+		CircuitInductor.rw,
+		CircuitWire.rw
 	)
 }
 
@@ -87,6 +88,41 @@ object CircuitResistor {
 
 	implicit val rw: ReadWriter[CircuitResistor] = macroRW
 }
+
+case class CircuitInductor(
+	nodes: Seq[CircuitNode],
+	value: Float,
+	inductorNumber: Int
+) extends CircuitComponent {
+	override def remapNodes(oldNodes: Seq[CircuitNode], newNode: CircuitNode): CircuitComponent = {
+		CircuitInductor(super.remapped(oldNodes, newNode), value)
+	}
+	def copy(copyNodes: Seq[CircuitNode] = nodes) : CircuitComponent =
+		CircuitInductor(copyNodes, value)
+	override def toSpice: String = Seq(
+		"L" + inductorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToInductorValue(value)
+	).mkString(" ")
+}
+
+object CircuitInductor {
+	private var counter = 0
+
+	def apply(
+		nodes: Seq[CircuitNode],
+		value: Float,
+		dummy: Int = 0
+	): CircuitInductor = {
+		counter += 1
+		new CircuitInductor(nodes = nodes, value = value, inductorNumber = counter)
+	}
+
+	def reset(): Unit = {
+		counter = 0
+	}
+
+	implicit val rw: ReadWriter[CircuitInductor] = macroRW
+}
+
 
 case class CircuitWire(
 	nodes: Seq[CircuitNode]

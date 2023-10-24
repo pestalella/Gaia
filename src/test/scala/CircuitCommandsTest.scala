@@ -4,6 +4,8 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 	before {
 		CircuitResistor.reset()
 		CircuitCapacitor.reset()
+		CircuitInductor.reset()
+		Circuit.reset()
 	}
 
 	test(testName = "Circuit.toSpiceOneResistor") {
@@ -77,4 +79,28 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		val circuit = CircuitBuilder.applyCommand(w1, ASTEnd()).cleanCircuit(externalNodes)
 		assert(circuit.toUndecoratedSpice == "")
 	}
-}
+
+	test(testName = "Circuit.fromWireToInductor") {
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
+		val w1 = CircuitWire(nodes = externalNodes)
+		val circuit = CircuitBuilder.applyCommand(w1, ASTInductor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
+		assert(circuit.toUndecoratedSpice == "L1 A B 100uH")
+	}
+
+	test(testName = "Circuit.oneASTInductorJSON") {
+		assert(upickle.default.write(ASTInductor(cCons = ASTEnd(), value = 7)) == "{\"$type\":\"ASTInductor\",\"cCons\":{\"$type\":\"ASTEnd\"},\"value\":7}")
+	}
+
+	test(testName = "Circuit.oneResistorCircuitToJSON") {
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
+		val w1 = CircuitWire(nodes = externalNodes)
+		val circuit = CircuitBuilder.applyCommand(w1, ASTResistor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
+		assert(upickle.default.write(circuit) == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"$type\":\"CircuitResistor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":7,\"resistorNumber\":1}],\"circuitNumber\":1}")
+	}
+
+	test(testName = "Circuit.oneInductorCircuitToJSON") {
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
+		val w1 = CircuitWire(nodes = externalNodes)
+		val circuit = CircuitBuilder.applyCommand(w1, ASTInductor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
+		assert(upickle.default.write(circuit) == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"$type\":\"CircuitInductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":7,\"inductorNumber\":1}],\"circuitNumber\":1}")
+	}}
