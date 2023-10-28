@@ -1,4 +1,4 @@
-import upickle.default._
+import ujson._
 import scala.collection.parallel.CollectionConverters._
 
 import java.io.PrintWriter
@@ -15,10 +15,15 @@ case class Population(members: Seq[PopulationMember]) {
 		measuredPop.sortWith((a, b) => a.fitness < b.fitness)
 	}
 
+	def toJson: Obj = {
+			Obj(
+				"members" -> Arr.from(members map (_.toJson))
+			)
+	}
+
 	def writeToFile(fileName: String): Unit = {
-		val contents = write(indent=2, t = this)
 		new PrintWriter(fileName) {
-			write(contents)
+			write(toJson.toString)
 			close()
 		}
 	}
@@ -90,7 +95,5 @@ object Population {
 		generation += 1
 		Population(newPop)
 	}
-
-	implicit val rw: ReadWriter[Population] = macroRW
 }
 

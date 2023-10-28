@@ -87,20 +87,38 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		assert(circuit.toUndecoratedSpice == "L1 A B 100uH")
 	}
 
+	test(testName = "Circuit.oneASTEndJSON") {
+		assert(ASTEnd().toJson.toString() == "{\"type\":\"End\",\"constructors\":[]}")
+	}
+	test(testName = "Circuit.oneASTParallelJSON") {
+		assert(ASTParallel(aCons = ASTEnd(), bCons = ASTEnd()).toJson.toString() == "{\"type\":\"Parallel\",\"constructors\":[{\"type\":\"End\",\"constructors\":[]},{\"type\":\"End\",\"constructors\":[]}]}")
+	}
+
+	test(testName = "Circuit.oneASTCapacitorJSON") {
+		assert(ASTCapacitor(cCons = ASTEnd(), value = 7).toJson.toString() == "{\"type\":\"Capacitor\",\"constructors\":[{\"type\":\"End\",\"constructors\":[]}],\"value\":\"7.0\"}")
+	}
+
+	test(testName = "Circuit.oneASTResistorJSON") {
+		assert(ASTResistor(cCons = ASTEnd(), value = 7).toJson.toString() == "{\"type\":\"Resistor\",\"constructors\":[{\"type\":\"End\",\"constructors\":[]}],\"value\":\"7.0\"}")
+	}
+
+
 	test(testName = "Circuit.oneASTInductorJSON") {
-		assert(upickle.default.write(ASTInductor(cCons = ASTEnd(), value = 7)) == "{\"$type\":\"ASTInductor\",\"cCons\":{\"$type\":\"ASTEnd\"},\"value\":7}")
+		assert(ASTInductor(cCons = ASTEnd(), value = 7).toJson.toString() == "{\"type\":\"Inductor\",\"constructors\":[{\"type\":\"End\",\"constructors\":[]}],\"value\":\"7.0\"}")
 	}
 
 	test(testName = "Circuit.oneResistorCircuitToJSON") {
 		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
 		val w1 = CircuitWire(nodes = externalNodes)
 		val circuit = CircuitBuilder.applyCommand(w1, ASTResistor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
-		assert(upickle.default.write(circuit) == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"$type\":\"CircuitResistor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":7,\"resistorNumber\":1}],\"circuitNumber\":1}")
+		assert(circuit.toJson.toString == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Resistor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":1}],\"circuitNumber\":1}")
 	}
 
 	test(testName = "Circuit.oneInductorCircuitToJSON") {
 		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
 		val w1 = CircuitWire(nodes = externalNodes)
 		val circuit = CircuitBuilder.applyCommand(w1, ASTInductor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
-		assert(upickle.default.write(circuit) == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"$type\":\"CircuitInductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":7,\"inductorNumber\":1}],\"circuitNumber\":1}")
+		CircuitInductor.reset()
+		assert(circuit.components == Seq(CircuitInductor(nodes=externalNodes, value=7)))
+		assert(circuit.toJson.toString() == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Inductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":1}],\"circuitNumber\":1}")
 	}}

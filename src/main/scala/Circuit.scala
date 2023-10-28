@@ -1,11 +1,11 @@
 import java.io.{File, PrintWriter}
 import scala.util.{Try, Failure, Success}
-import upickle.default.{ReadWriter, macroRW}
 
 class Circuit(
 	val nodes: Seq[CircuitNode],
 	val components: Seq[CircuitComponent],
 	val circuitNumber: Int) {
+
 	def combined(rhs: Circuit): Circuit = {
 		val newCirc = new Circuit(
 			nodes = (nodes ++ rhs.nodes).distinct,
@@ -60,6 +60,7 @@ class Circuit(
 			}
 		}
 	}
+
 	def calcFitness(): Double = {
 		val simResult = simulateCircuit()
 		if (simResult.isEmpty)
@@ -73,10 +74,11 @@ class Circuit(
 					magnitude = if (dbMagnitude.isNaN) 1E10 else dbMagnitude,
 					phase = dataPoint.phase)
 			})
-			dbData.foldLeft(0.0)((fitAccum, dataPoint) => fitAccum + dataPointFitness(dataPoint)) +
-				(components.size * 0.1)
+			dbData.foldLeft(0.0)((fitAccum, dataPoint) => fitAccum + dataPointFitness(dataPoint)) *
+				(1.0 + components.size*0.01)
 		}
 	}
+
 	private def dataPointFitness(simDataPoint: SimDataPoint): Double = {
 		val hiCutOffFreq = 2000.0
 		val lowCutOffFreq = 0.0
@@ -95,12 +97,8 @@ class Circuit(
 			else
 				scala.math.abs(-120 - simDataPoint.magnitude) * 10
 		}
-		//scala.math.pow((dataPoint.magnitude - 1.0) * 10, 2.0)
-//		else
-//			fitAccum + scala.math.pow(dataPoint.magnitude * 10, 2.0)
-//		) +(components.size * 0.1)
-
 	}
+
 	private def simulateCircuit(): String = {
 		writeCircuit()
 		import scala.sys.process._
@@ -189,11 +187,18 @@ class Circuit(
 			".CONTROL",
 			s"AC DEC ${Parameters.simulationDataPoints} 10 200k",
 			"GNUPLOT circuitV db(B)",
-			"GNUPLOT circuitDB V(B)",
 			"OPTION NOACCT",
 			".ENDC",
 			".END"
 		).mkString("\n")
+	}
+
+	def toJson: ujson.Obj = {
+		ujson.Obj(
+			"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+			"components" -> ujson.Arr.from(components map (_.toJson)),
+			"circuitNumber" -> circuitNumber
+		)
 	}
 
 	def writeToFile(fileName: String): Unit = {
@@ -207,13 +212,11 @@ class Circuit(
 
 object Circuit {
 	private var circuitCount = 0
-	def apply(nodes: Seq[CircuitNode], components: Seq[CircuitComponent], dummy:Int = 0): Circuit = {
+	def apply(nodes: Seq[CircuitNode], components: Seq[CircuitComponent]): Circuit = {
 		circuitCount += 1
 		new Circuit(nodes = nodes, components= components, circuitNumber = circuitCount)
 	}
 	def reset(): Unit = {
 		circuitCount = 0
 	}
-
-	implicit val rw: ReadWriter[Circuit] = macroRW
 }

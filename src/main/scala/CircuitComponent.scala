@@ -1,25 +1,16 @@
-import upickle.default.{ReadWriter, macroRW}
+import ujson.Obj
 
 sealed abstract class CircuitComponent {
 	def nodes: Seq[CircuitNode]
-	def remapNodes(nodes: Seq[CircuitNode], newNode: CircuitNode): CircuitComponent = ???
+	def remapNodes(nodes: Seq[CircuitNode], newNode: CircuitNode): CircuitComponent
 	def remapped(oldNodes: Seq[CircuitNode], newNode: CircuitNode): Seq[CircuitNode] = {
 		for {n <- nodes} yield {
 			if (oldNodes.contains(n)) newNode else n
 		}
 	}
 	def copy(nodes: Seq[CircuitNode] = nodes) : CircuitComponent
-	def toSpice: String = ???
-}
-
-object CircuitComponent {
-//	implicit val rw: ReadWriter[CircuitComponent] = macroRW
-	implicit val rw: ReadWriter[CircuitComponent] = ReadWriter.merge(
-		CircuitCapacitor.rw,
- 		CircuitResistor.rw,
-		CircuitInductor.rw,
-		CircuitWire.rw
-	)
+	def toSpice: String
+	def toJson: ujson.Obj
 }
 
 case class CircuitCapacitor(
@@ -35,14 +26,20 @@ case class CircuitCapacitor(
 	override def toSpice: String = Seq(
 		"C" + capacitorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToCapValue(value)
 	).mkString(" ")
+
+	override def toJson: Obj = Obj(
+		"type" -> "Capacitor",
+		"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+		"value" -> value.toString,
+		"ident" -> capacitorNumber
+	)
 }
 
 object CircuitCapacitor {
 	private var counter = 0
 	def apply(
 		nodes: Seq[CircuitNode],
-		value: Float,
-		dummy: Int = 0
+		value: Float
 	): CircuitCapacitor = {
 		counter += 1
 		new CircuitCapacitor(nodes = nodes, value = value, capacitorNumber = counter)
@@ -51,8 +48,6 @@ object CircuitCapacitor {
 	def reset(): Unit = {
 		counter = 0
 	}
-
-	implicit val rw: ReadWriter[CircuitCapacitor] = macroRW
 }
 
 case class CircuitResistor(
@@ -68,6 +63,13 @@ case class CircuitResistor(
 	override def toSpice: String = Seq(
 		"R" + resistorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToResistorValue(value)
 	).mkString(" ")
+
+	override def toJson: Obj = Obj(
+		"type" -> "Resistor",
+		"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+		"value" -> value.toString,
+		"ident" -> resistorNumber
+	)
 }
 
 object CircuitResistor {
@@ -75,8 +77,7 @@ object CircuitResistor {
 
 	def apply(
 		nodes: Seq[CircuitNode],
-		value: Float,
-		dummy: Int = 0
+		value: Float
 	): CircuitResistor = {
 		counter += 1
 		new CircuitResistor(nodes = nodes, value = value, resistorNumber = counter)
@@ -85,8 +86,6 @@ object CircuitResistor {
 	def reset(): Unit = {
 		counter = 0
 	}
-
-	implicit val rw: ReadWriter[CircuitResistor] = macroRW
 }
 
 case class CircuitInductor(
@@ -102,6 +101,14 @@ case class CircuitInductor(
 	override def toSpice: String = Seq(
 		"L" + inductorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToInductorValue(value)
 	).mkString(" ")
+
+	override def toJson: Obj = Obj(
+		"type" -> "Inductor",
+		"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+		"value" -> value.toString,
+		"ident" -> inductorNumber
+	)
+
 }
 
 object CircuitInductor {
@@ -109,8 +116,7 @@ object CircuitInductor {
 
 	def apply(
 		nodes: Seq[CircuitNode],
-		value: Float,
-		dummy: Int = 0
+		value: Float
 	): CircuitInductor = {
 		counter += 1
 		new CircuitInductor(nodes = nodes, value = value, inductorNumber = counter)
@@ -119,8 +125,6 @@ object CircuitInductor {
 	def reset(): Unit = {
 		counter = 0
 	}
-
-	implicit val rw: ReadWriter[CircuitInductor] = macroRW
 }
 
 
@@ -135,8 +139,9 @@ case class CircuitWire(
 	override def toSpice: String = Seq(
 		"W", nodes.head, nodes.last
 	).mkString(" ")
-}
 
-object CircuitWire {
-	implicit val rw: ReadWriter[CircuitWire] = macroRW
+	override def toJson: Obj = Obj(
+		"type" -> "Wire",
+		"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+	)
 }

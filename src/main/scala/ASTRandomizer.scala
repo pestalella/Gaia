@@ -2,13 +2,13 @@ object ASTRandomizer {
 	private object Operation extends Enumeration {
 		type Operation = Value
 		val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND  = Value
-}
+	}
 	private def randomNumericConstant(minValue: Float = 0, maxValue: Float = 1): Float = {
 			scala.util.Random.nextFloat()*(maxValue-minValue) + minValue
 	}
 	def randomAST(maxDepth: Int): ASTNode = {
 		if (maxDepth <= 1)
-			ASTEnd()
+			new ASTEnd
 		else {
 			val operations = Seq(
 				(10, Operation.Resistor),

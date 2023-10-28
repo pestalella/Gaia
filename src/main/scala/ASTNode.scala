@@ -1,69 +1,135 @@
-import upickle.default._
+ object ASTNodeType extends Enumeration {
+	type ASTNodeType = Value
+	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, End = Value
+}
 
-sealed trait ASTNode {
-	def nodeCount: Int
+abstract class ASTNode(
+	val nodeType: ASTNodeType.ASTNodeType,
+	val constructors: Seq[ASTNode]
+) {
+	def nodeCount: Int = 1 + constructors.foldLeft(0)((accum, node) => accum + node.nodeCount)
 
-	def height: Int
+	def height: Int = 1 + constructors.foldLeft(0)((maxHeight, node) => scala.math.max(maxHeight, node.height))
 
-	def getNthSubtree(subtree: Int): ASTNode
+	def getNthSubtree(subtree: Int): ASTNode = {
+		if (subtree == 0)
+			this
+		else {
+			var nodeCount = 0
+			val nodeWithSubtree = constructors.find(cons => {
+				nodeCount += cons.nodeCount
+				subtree <= nodeCount
+			})
+			nodeWithSubtree match {
+				case None =>
+					assert(assertion = false, "Got asked for a non-existent subtree")
+					this
+				case Some(node) => node.getNthSubtree(subtree - (nodeCount - node.nodeCount) - 1)
+			}
+		}
+	}
+	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
+		if (insertionPoint == 0)
+			toInsert
+		else if (insertionPoint < 0)
+			this
+		else {
+			var nodeCount = 0
+			val newCons = constructors map (cons => {
+				nodeCount += cons.nodeCount
+				if (insertionPoint - 1 <= nodeCount)
+					cons.withInsertion(toInsert, insertionPoint - 1 - (nodeCount - cons.nodeCount))
+				else
+					cons
+			})
+			this.copy(
+				constructors = newCons
+			)
+		}
 
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode
-
-	def mutate(mutationPoint: Int): ASTNode
+	def mutate(mutationPoint: Int): ASTNode = {
+		if (mutationPoint == 0) {
+			// Either return a whole new tree or this same node
+			if (coinFlip(Parameters.mutationRate)) {
+				ASTRandomizer.randomAST(height)
+			} else {
+				this
+			}
+		} else {
+			var nodeCount = 0
+			val mutatedConstructors = constructors.map(cons => {
+				nodeCount += cons.nodeCount
+				if (mutationPoint - 1 <= nodeCount)
+					cons.mutate(mutationPoint - 1 - (nodeCount - cons.nodeCount))
+				else
+					cons
+			})
+			this.copy(
+				constructors = mutatedConstructors
+			)
+		}
+	}
 
 	def coinFlip(trueProb: Float): Boolean = {
 		scala.util.Random.nextFloat() <= trueProb
 	}
+
+	def copy(constructors: Seq[ASTNode]): ASTNode
+
+	def toJson: ujson.Obj = {
+		ujson.Obj(
+			"type" -> nodeType.toString,
+			"constructors" -> ujson.Arr.from(constructors map (_.toJson))
+		)
+	}
 }
-object ASTNode{
-  implicit val rw: ReadWriter[ASTNode] = ReadWriter.merge(
-		ASTCapacitor.rw,
-		ASTResistor.rw,
-		ASTInductor.rw,
-		ASTParallel.rw,
-		ASTSeries.rw,
-		ASTThreeGND.rw,
-		ASTEnd.rw
-	)
+
+abstract class ASTNodeWithValue(
+	nodeValueType: ASTNodeType.ASTNodeType,
+	nvCons: ASTNode,
+	nValue: Float
+) extends ASTNode(nodeType = nodeValueType, constructors = Seq(nvCons)) {
+	override def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
+		if (insertionPoint == 0)
+			toInsert
+		else if (insertionPoint < 0)
+			this
+		else {
+			this.copy(
+				constructors = Seq(nvCons.withInsertion(toInsert, insertionPoint - 1))
+			)
+		}
+
+//def copy(cons: ASTNode = nvCons, value: Float = nValue): ASTNodeWithValue
+
+	override def toJson: ujson.Obj = {
+		ujson.Obj(
+			"type" -> nodeType.toString,
+			"constructors" -> ujson.Arr.from(constructors map (_.toJson)),
+			"value" -> nValue.toString
+		)
+	}
 }
 
 case class ASTCapacitor(
 	cCons: ASTNode,
 	value: Float
-) extends ASTNode {
-	override def nodeCount: Int = 1 + cCons.nodeCount
-	override def height: Int = 1 + cCons.height
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else
-			cCons.getNthSubtree(subtree - 1)
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else
-			this.copy(
-				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
-				value = value
-			)
-
-	def mutate(mutationPoint: Int): ASTNode = {
+) extends ASTNodeWithValue(
+	nodeValueType = ASTNodeType.Capacitor,
+	nvCons = cCons,
+	nValue = value) {
+	override def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
 			// Either return a whole new tree or this same node slightly mutated in value
 			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
 			} else {
-				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+				ASTCapacitor(cCons = cCons, value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
 			}
 		} else {
 			// This is not the point we wanted to mutate
 			if (mutationPoint - 1 <= cCons.nodeCount)
-				this.copy(
+				ASTCapacitor(
 					cCons = cCons.mutate(mutationPoint - 1),
 					value = value
 				)
@@ -71,49 +137,32 @@ case class ASTCapacitor(
 				this
 		}
 	}
-}
 
-object ASTCapacitor {
-	implicit val rw: ReadWriter[ASTCapacitor] = macroRW
+	override def copy(constructors: Seq[ASTNode] = Seq(cCons)): ASTNode = ASTCapacitor(
+		cCons = constructors.head,
+		value = value
+	)
 }
 
 case class ASTResistor(
 	cCons: ASTNode,
 	value: Float
-) extends ASTNode {
-	override def nodeCount: Int = 1 + cCons.nodeCount
-	override def height: Int = 1 + cCons.height
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else
-			cCons.getNthSubtree(subtree - 1)
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else
-			this.copy(
-				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
-				value = value
-			)
-
-	def mutate(mutationPoint: Int): ASTNode = {
+) extends ASTNodeWithValue(
+	nodeValueType = ASTNodeType.Resistor,
+	nvCons = cCons,
+	nValue = value) {
+	override def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
 			// Either return a whole new tree or this same node slightly mutated in value
 			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
 			} else {
-				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+				ASTResistor(cCons = cCons, value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
 			}
 		} else {
 			// This is not the point we wanted to mutate
 			if (mutationPoint - 1 <= cCons.nodeCount)
-				this.copy(
+				ASTResistor(
 					cCons = cCons.mutate(mutationPoint - 1),
 					value = value
 				)
@@ -121,49 +170,32 @@ case class ASTResistor(
 				this
 		}
 	}
-}
 
-object ASTResistor {
-	implicit val rw: ReadWriter[ASTResistor] = macroRW
+	override def copy(constructors: Seq[ASTNode] = Seq(cCons)): ASTNode = ASTResistor(
+		cCons = constructors.head,
+		value = value
+	)
 }
 
 case class ASTInductor(
 	cCons: ASTNode,
 	value: Float
-) extends ASTNode {
-	override def nodeCount: Int = 1 + cCons.nodeCount
-	override def height: Int = 1 + cCons.height
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else
-			cCons.getNthSubtree(subtree - 1)
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else
-			this.copy(
-				cCons = cCons.withInsertion(toInsert = toInsert, insertionPoint = insertionPoint - 1),
-				value = value
-			)
-
-	def mutate(mutationPoint: Int): ASTNode = {
+) extends ASTNodeWithValue(
+	nodeValueType = ASTNodeType.Inductor,
+	nvCons = cCons,
+	nValue = value) {
+	override def mutate(mutationPoint: Int): ASTNode = {
 		if (mutationPoint == 0) {
 			// Either return a whole new tree or this same node slightly mutated in value
 			if (coinFlip(Parameters.mutationRate)) {
 				ASTRandomizer.randomAST(height)
 			} else {
-				this.copy(value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
+				ASTInductor(cCons = cCons, value = value + (value * (0.2f * scala.util.Random.nextFloat() - 0.1f)))
 			}
 		} else {
 			// This is not the point we wanted to mutate
 			if (mutationPoint - 1 <= cCons.nodeCount)
-				this.copy(
+				ASTInductor(
 					cCons = cCons.mutate(mutationPoint - 1),
 					value = value
 				)
@@ -171,238 +203,65 @@ case class ASTInductor(
 				this
 		}
 	}
-}
 
-object ASTInductor {
-	implicit val rw: ReadWriter[ASTInductor] = macroRW
+	override def copy(constructors: Seq[ASTNode] = Seq(cCons)): ASTNode = ASTInductor(
+		cCons = constructors.head,
+		value = value
+	)
 }
 
 case class ASTThreeGND(
 	aCons: ASTNode,
 	bCons: ASTNode,
 	gndCons: ASTNode
-) extends ASTNode {
-	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount
-	override def height: Int = 1 + scala.math.max(scala.math.max(aCons.height, bCons.height), gndCons.height)
+) extends ASTNode(nodeType = ASTNodeType.ThreeGND, constructors = Seq(aCons, bCons, gndCons)) {
 
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else if (subtree <= aCons.nodeCount)
-			aCons.getNthSubtree(subtree - 1)
-		else if (subtree <= aCons.nodeCount + bCons.nodeCount)
-			bCons.getNthSubtree(subtree - 1 - aCons.nodeCount)
-		else if (subtree <= aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount)
-		  gndCons.getNthSubtree(subtree - 1 - aCons.nodeCount - bCons.nodeCount)
-		else {
-			assert(assertion = false, "Got asked for a non-existent subtree")
-			this
-		}
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else {
-			this.copy(
-				aCons = aCons.withInsertion(toInsert, insertionPoint - 1),
-				bCons = bCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - 1),
-				gndCons = gndCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - bCons.nodeCount - 1)
-			)
-		}
-
-	def mutate(mutationPoint: Int): ASTNode = {
-		if (mutationPoint == 0) {
-			// Either return a whole new tree or this same node
-			if (coinFlip(Parameters.mutationRate)) {
-				ASTRandomizer.randomAST(height)
-			} else {
-				this
-			}
-		} else {
-			// This is not the point we wanted to mutate
-			if (mutationPoint - 1 <= aCons.nodeCount)
-				this.copy(
-					aCons = aCons.mutate(mutationPoint - 1)
-				)
-			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
-				this.copy(
-					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
-				)
-			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount + gndCons.nodeCount)
-				this.copy(
-					gndCons = gndCons.mutate(mutationPoint - aCons.nodeCount - bCons.nodeCount - 1)
-				)
-			else
-				this
-		}
-	}
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons, gndCons)): ASTNode = ASTThreeGND(
+		aCons = constructors(0),
+		bCons = constructors(1),
+		gndCons = constructors(2)
+	)
 }
 
-object ASTThreeGND {
-	implicit val rw: ReadWriter[ASTThreeGND] = macroRW
-}
 
 case class ASTParallel(
 	aCons: ASTNode,
 	bCons: ASTNode
-) extends ASTNode {
-	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount
-	override def height: Int = 1 + scala.math.max(aCons.height, bCons.height)
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else if (subtree <= aCons.nodeCount)
-			aCons.getNthSubtree(subtree - 1)
-		else if (subtree <= aCons.nodeCount + bCons.nodeCount)
-			bCons.getNthSubtree(subtree - 1 - aCons.nodeCount)
-		else {
-			assert(assertion = false, "Got asked for a non-existent subtree")
-			this
-		}
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else {
-			this.copy(
-				aCons = aCons.withInsertion(toInsert, insertionPoint - 1),
-				bCons = bCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - 1)
-			)
-		}
-
-	def mutate(mutationPoint: Int): ASTNode = {
-		if (mutationPoint == 0) {
-			// Either return a whole new tree or this same node
-			if (coinFlip(Parameters.mutationRate)) {
-				ASTRandomizer.randomAST(height)
-			} else {
-				this
-			}
-		} else {
-			// This is not the point we wanted to mutate, go deeper
-			if (mutationPoint - 1 <= aCons.nodeCount)
-				this.copy(
-					aCons = aCons.mutate(mutationPoint - 1)
-				)
-			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
-				this.copy(
-					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
-				)
-			else {
-				// Nope, the mutation point is outside this subtree
-				this
-			}
-		}
-	}
-}
-
-object ASTParallel {
-	implicit val rw: ReadWriter[ASTParallel] = macroRW
+) extends ASTNode(nodeType = ASTNodeType.Parallel, constructors = Seq(aCons, bCons)) {
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons)): ASTNode = ASTParallel(
+		aCons = constructors(0),
+		bCons = constructors(1)
+	)
 }
 
 case class ASTSeries(
 	aCons: ASTNode,
 	bCons: ASTNode
-) extends ASTNode {
-	override def nodeCount: Int = 1 + aCons.nodeCount + bCons.nodeCount
-	override def height: Int = 1 + scala.math.max(aCons.height, bCons.height)
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else if (subtree <= aCons.nodeCount)
-			aCons.getNthSubtree(subtree - 1)
-		else if (subtree <= aCons.nodeCount + bCons.nodeCount)
-			bCons.getNthSubtree(subtree - 1 - aCons.nodeCount)
-		else {
-			assert(assertion = false, "Got asked for a non-existent subtree")
-			this
-		}
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else if (insertionPoint < 0)
-			this
-		else
-			this.copy(
-				aCons = aCons.withInsertion(toInsert, insertionPoint - 1),
-				bCons = bCons.withInsertion(toInsert, insertionPoint - aCons.nodeCount - 1)
-			)
-
-	def mutate(mutationPoint: Int): ASTNode = {
-		if (mutationPoint == 0) {
-			// Either return a whole new tree or this same node
-			if (coinFlip(Parameters.mutationRate)) {
-				ASTRandomizer.randomAST(height)
-			} else {
-				this
-			}
-		} else {
-			// This is not the point we wanted to mutate
-			if (mutationPoint - 1 <= aCons.nodeCount)
-				this.copy(
-					aCons = aCons.mutate(mutationPoint - 1)
-				)
-			else if (mutationPoint - 1 <= aCons.nodeCount + bCons.nodeCount)
-				this.copy(
-					bCons = bCons.mutate(mutationPoint - aCons.nodeCount - 1)
-				)
-			else
-				this
-		}
-	}
+) extends ASTNode(nodeType = ASTNodeType.Series, constructors = Seq(aCons, bCons)) {
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons)): ASTNode = ASTSeries(
+		aCons = constructors(0),
+		bCons = constructors(1)
+	)
 }
 
-object ASTSeries {
-	implicit val rw: ReadWriter[ASTSeries] = macroRW
-}
-
-class ASTEnd extends ASTNode {
-	override def nodeCount: Int = 1
-	override def height: Int = 1
-
-	def getNthSubtree(subtree: Int): ASTNode = {
-		if (subtree == 0)
-			this
-		else {
-			assert(assertion = false, "Got asked for a non-existent subtree")
-			this
-		}
-	}
-
-	def withInsertion(toInsert: ASTNode, insertionPoint: Int): ASTNode =
-		if (insertionPoint == 0)
-			toInsert
-		else
-			this
-
+class ASTEnd extends ASTNode(nodeType = ASTNodeType.End, constructors = Seq()) {
 	override def toString: String = "ASTEnd"
 
-	def mutate(mutationPoint: Int): ASTNode = {
-		if (mutationPoint == 0) {
-			if (coinFlip(Parameters.mutationRate)) {
-				// Either return a whole new tree
-				ASTRandomizer.randomAST(height + 1)
-			} else {
-				// Or return this same node
-				this
-			}
-		} else
-				this
-		}
+	override def copy(constructors: Seq[ASTNode]): ASTNode = ASTEnd()
 }
 
 object ASTEnd {
-	def apply() = new ASTEnd
-	implicit val rw: ReadWriter[ASTEnd] = macroRW
+	def apply(): ASTEnd = new ASTEnd
 }
 
+case class ASTVIA0(
+	aCons: ASTNode,
+	bCons: ASTNode,
+	vCons: ASTNode
+) extends ASTNode(nodeType = ASTNodeType.Series, constructors = Seq(aCons, bCons, vCons)) {
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons, vCons)): ASTNode = ASTVIA0(
+		aCons = constructors(0),
+		bCons = constructors(1),
+		vCons = constructors(2)
+	)
+}

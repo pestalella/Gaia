@@ -1,12 +1,18 @@
 object CircuitBuilder {
 	def applyCommand(comp: CircuitComponent, genericCommand: ASTNode): Circuit = {
 		genericCommand match {
-			case cmd: ASTCapacitor => applyCommand(comp, cmd)
-			case cmd: ASTResistor => applyCommand(comp, cmd)
-			case cmd: ASTInductor => applyCommand(comp, cmd)
-			case cmd: ASTParallel => applyCommand(comp, cmd)
-			case cmd: ASTSeries => applyCommand(comp, cmd)
-			case cmd: ASTThreeGND => applyCommand(comp, cmd)
+			case cmd: ASTCapacitor =>
+				applyCommand(comp, cmd)
+			case cmd: ASTResistor =>
+				applyCommand(comp, cmd)
+			case cmd: ASTInductor =>
+				applyCommand(comp, cmd)
+			case cmd: ASTParallel =>
+				applyCommand(comp, cmd)
+			case cmd: ASTSeries =>
+				applyCommand(comp, cmd)
+			case cmd: ASTThreeGND =>
+				applyCommand(comp, cmd)
 			case _: ASTEnd => applyCommand(comp)
 		}
 	}

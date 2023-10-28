@@ -59,6 +59,21 @@ class ASTOperationsTest extends AnyFunSuiteLike {
 		assert(crossed.toString == leftTree.toString)
 	}
 
+	test("testCrossCapacitorEnd") {
+		val leftTree = ASTEnd()
+		val rightTree = ASTCapacitor(
+			cCons = ASTCapacitor(
+				cCons = ASTEnd(),
+				value = 44),
+			value = 2)
+
+		val crossed = ASTOperations.cross(donor = leftTree, 0, receiver = rightTree, 1)
+		val expectedCross = ASTCapacitor(
+			cCons = ASTEnd(),
+			value = 2)
+		assert(crossed.toJson.toString == expectedCross.toJson.toString)
+	}
+
 	test("testCrossResistorEnd") {
 		val leftTree = ASTEnd()
 		val rightTree = ASTResistor(
@@ -66,11 +81,27 @@ class ASTOperationsTest extends AnyFunSuiteLike {
 				cCons = ASTEnd(),
 				value = 44),
 			value = 2)
+
 		val crossed = ASTOperations.cross(donor = leftTree, 0, receiver = rightTree, 1)
 		val expectedCross = ASTResistor(
 			cCons = ASTEnd(),
 			value = 2)
-		assert(crossed.toString == expectedCross.toString)
+		assert(crossed.toJson.toString == expectedCross.toJson.toString)
+	}
+
+	test("testCrossInductorEnd") {
+		val leftTree = ASTEnd()
+		val rightTree = ASTInductor(
+			cCons = ASTCapacitor(
+				cCons = ASTEnd(),
+				value = 44),
+			value = 2)
+
+		val crossed = ASTOperations.cross(donor = leftTree, 0, receiver = rightTree, 1)
+		val expectedCross = ASTInductor(
+			cCons = ASTEnd(),
+			value = 2)
+		assert(crossed.toJson.toString == expectedCross.toJson.toString)
 	}
 
 	test("testCrossSeriesParallel") {
@@ -91,7 +122,7 @@ class ASTOperationsTest extends AnyFunSuiteLike {
 			aCons = rightTree1,
 			bCons = rightTree2
 		)
-		assert(crossed.toString == expectedCross.toString)
+		assert(crossed.toJson.toString == expectedCross.toJson.toString)
 	}
 }
 
