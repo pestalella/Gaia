@@ -12,3 +12,6 @@ libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.2"
 libraryDependencies ++= Seq(
 	"org.scalatest" %% "scalatest" % "latest.integration" % Test
 )
+// Parallel collections support
+libraryDependencies +=
+  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
