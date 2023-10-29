@@ -23,7 +23,7 @@ case class Population(members: Seq[PopulationMember]) {
 
 	def writeToFile(fileName: String): Unit = {
 		new PrintWriter(fileName) {
-			write(toJson.toString)
+			write(toJson.render(indent=2))
 			close()
 		}
 	}

@@ -1,6 +1,6 @@
  object ASTNodeType extends Enumeration {
 	type ASTNodeType = Value
-	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, End = Value
+	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, End = Value
 }
 
 abstract class ASTNode(
@@ -99,8 +99,6 @@ abstract class ASTNodeWithValue(
 				constructors = Seq(nvCons.withInsertion(toInsert, insertionPoint - 1))
 			)
 		}
-
-//def copy(cons: ASTNode = nvCons, value: Float = nValue): ASTNodeWithValue
 
 	override def toJson: ujson.Obj = {
 		ujson.Obj(
@@ -223,7 +221,6 @@ case class ASTThreeGND(
 	)
 }
 
-
 case class ASTParallel(
 	aCons: ASTNode,
 	bCons: ASTNode
@@ -244,24 +241,22 @@ case class ASTSeries(
 	)
 }
 
-class ASTEnd extends ASTNode(nodeType = ASTNodeType.End, constructors = Seq()) {
-	override def toString: String = "ASTEnd"
-
-	override def copy(constructors: Seq[ASTNode]): ASTNode = ASTEnd()
-}
-
-object ASTEnd {
-	def apply(): ASTEnd = new ASTEnd
-}
-
 case class ASTVIA0(
 	aCons: ASTNode,
-	bCons: ASTNode,
 	vCons: ASTNode
-) extends ASTNode(nodeType = ASTNodeType.Series, constructors = Seq(aCons, bCons, vCons)) {
-	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons, vCons)): ASTNode = ASTVIA0(
+) extends ASTNode(nodeType = ASTNodeType.Via0, constructors = Seq(aCons,  vCons)) {
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, vCons)): ASTNode = ASTVIA0(
 		aCons = constructors(0),
-		bCons = constructors(1),
-		vCons = constructors(2)
+		vCons = constructors(1)
 	)
 }
+
+ class ASTEnd extends ASTNode(nodeType = ASTNodeType.End, constructors = Seq()) {
+	 override def toString: String = "ASTEnd"
+
+	 override def copy(constructors: Seq[ASTNode]): ASTNode = ASTEnd()
+ }
+
+ object ASTEnd {
+	 def apply(): ASTEnd = new ASTEnd
+ }

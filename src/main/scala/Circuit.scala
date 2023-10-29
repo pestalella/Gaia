@@ -75,7 +75,7 @@ class Circuit(
 					phase = dataPoint.phase)
 			})
 			dbData.foldLeft(0.0)((fitAccum, dataPoint) => fitAccum + dataPointFitness(dataPoint)) *
-				(1.0 + components.size*0.01)
+				(1.0 + components.size*0.00001)
 		}
 	}
 
@@ -93,7 +93,7 @@ class Circuit(
 			if (simDataPoint.magnitude < -120.0)
 				0
 			else if (simDataPoint.magnitude < -60.0)
-				scala.math.abs(-60 - simDataPoint.magnitude)
+				scala.math.abs(-120 - simDataPoint.magnitude)
 			else
 				scala.math.abs(-120 - simDataPoint.magnitude) * 10
 		}
@@ -165,7 +165,8 @@ class Circuit(
 		Seq(
 			s".TITLE TEST CIRCUIT $circuitNumber",
 			"",
-			"VIN A 0 DC 0 AC 1",
+			"VIN VS 0 DC 0 AC 1",
+			"RSOURCE VS A 1k",
 			"RLOAD B 0 1k",
 			toUndecoratedSpice,
 			s".AC DEC ${Parameters.simulationDataPoints} 10 200k",

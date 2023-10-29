@@ -13,9 +13,12 @@ object CircuitBuilder {
 				applyCommand(comp, cmd)
 			case cmd: ASTThreeGND =>
 				applyCommand(comp, cmd)
+			case cmd: ASTVIA0 =>
+				applyCommand(comp, cmd)
 			case _: ASTEnd => applyCommand(comp)
 		}
 	}
+
 	def applyCommand(comp: CircuitComponent, cmd: ASTCapacitor): Circuit = {
 		applyCommand(
 			CircuitCapacitor(
@@ -24,6 +27,7 @@ object CircuitBuilder {
 			),
 			cmd.cCons)
 	}
+
 	def applyCommand(comp: CircuitComponent, cmd: ASTResistor): Circuit = {
 		applyCommand(
 			CircuitResistor(
@@ -62,6 +66,20 @@ object CircuitBuilder {
 		val gnd = applyCommand(CircuitWire(Seq(midNode, gndNode)), cmd.gndCons)
 		lhs.combined(rhs).combined(gnd)
 	}
+
+	def applyCommand(comp: CircuitComponent, cmd: ASTVIA0): Circuit = {
+		val midNode = comp.nodes.head.combined(comp.nodes.last)
+		val viaNode = CircuitNode.via0
+		val oldComponentNewNodes = Seq(midNode, comp.nodes.last)
+		val oldComponentCircuit = Circuit(
+			nodes = oldComponentNewNodes,
+			components = Seq(comp.copy(nodes = oldComponentNewNodes))
+		)
+		val lhs = applyCommand(CircuitWire(Seq(comp.nodes.head, midNode)), cmd.aCons)
+		val via = applyCommand(CircuitWire(Seq(midNode, viaNode)), cmd.vCons)
+		lhs.combined(oldComponentCircuit).combined(via)
+	}
+
 	def applyCommand(comp: CircuitComponent): Circuit =
 		Circuit(nodes = comp.nodes, components = Seq(comp))
 }
