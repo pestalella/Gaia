@@ -95,5 +95,12 @@ object Population {
 		generation += 1
 		Population(newPop)
 	}
+
+	def fromJson(inputJson: Obj): Population = {
+		val inputMembers = (for (member <- inputJson("members").arr) yield {
+			PopulationMember.fromJson(member.obj)
+		}).toSeq
+		Population(members = inputMembers)
+	}
 }
 

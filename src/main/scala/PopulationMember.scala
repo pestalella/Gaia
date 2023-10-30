@@ -12,3 +12,13 @@ case class PopulationMember(
 		"fitness" -> fitness.toString
 	)
 }
+
+object PopulationMember {
+	def fromJson(obj: Obj): PopulationMember = {
+		PopulationMember(
+			circuit = Circuit.fromJson(obj("circuit").obj),
+			generator = ASTNode.fromJson(obj("generator").obj),
+			fitness = obj("fitness").str.toDouble
+		)
+	}
+}

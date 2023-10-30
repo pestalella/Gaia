@@ -13,6 +13,22 @@ sealed abstract class CircuitComponent {
 	def toJson: ujson.Obj
 }
 
+object CircuitComponent {
+	def fromJson(inputJson: Obj): CircuitComponent = {
+		val cType = inputJson("type").str
+		if (cType == "Capacitor")
+			CircuitCapacitor.fromJson(inputJson)
+		else if (cType == "Resistor")
+			CircuitResistor.fromJson(inputJson)
+		else if (cType == "Inductor")
+			CircuitInductor.fromJson(inputJson)
+		else {
+			println(s"OMG, got a component of type $cType")
+			CircuitResistor(Seq(), 0)
+		}
+	}
+}
+
 case class CircuitCapacitor(
 	nodes: Seq[CircuitNode],
 	value: Float,
@@ -37,6 +53,7 @@ case class CircuitCapacitor(
 
 object CircuitCapacitor {
 	private var counter = 0
+
 	def apply(
 		nodes: Seq[CircuitNode],
 		value: Float
@@ -44,9 +61,20 @@ object CircuitCapacitor {
 		counter += 1
 		new CircuitCapacitor(nodes = nodes, value = value, capacitorNumber = counter)
 	}
+
 	// For testing purposes, should not be used in general code
 	def reset(): Unit = {
 		counter = 0
+	}
+
+	def fromJson(inputJson: Obj): CircuitComponent = {
+		val inputNodes = (for (node <- inputJson("nodes").arr) yield {
+			CircuitNode.fromJson(node.obj)
+		}).toSeq
+		CircuitCapacitor(
+			nodes = inputNodes,
+			value = inputJson("value").str.toFloat,
+		)
 	}
 }
 
@@ -86,6 +114,16 @@ object CircuitResistor {
 	def reset(): Unit = {
 		counter = 0
 	}
+
+	def fromJson(inputJson: Obj): CircuitComponent = {
+		val inputNodes = (for (node <- inputJson("nodes").arr) yield {
+			CircuitNode.fromJson(node.obj)
+		}).toSeq
+		CircuitResistor(
+			nodes = inputNodes,
+			value = inputJson("value").str.toFloat,
+		)
+	}
 }
 
 case class CircuitInductor(
@@ -124,6 +162,16 @@ object CircuitInductor {
 
 	def reset(): Unit = {
 		counter = 0
+	}
+
+	def fromJson(inputJson: Obj): CircuitComponent = {
+		val inputNodes = (for (node <- inputJson("nodes").arr) yield {
+			CircuitNode.fromJson(node.obj)
+		}).toSeq
+		CircuitInductor(
+			nodes = inputNodes,
+			value = inputJson("value").str.toFloat,
+		)
 	}
 }
 

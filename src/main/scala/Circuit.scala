@@ -1,5 +1,6 @@
 import java.io.{File, PrintWriter}
 import scala.util.{Try, Failure, Success}
+import ujson._
 
 class Circuit(
 	val nodes: Seq[CircuitNode],
@@ -220,4 +221,18 @@ object Circuit {
 	def reset(): Unit = {
 		circuitCount = 0
 	}
+
+	def fromJson(inputJson: Obj): Circuit = {
+		val inputNodes = (for (node <- inputJson("nodes").arr) yield {
+			CircuitNode.fromJson(node.obj)
+		}).toSeq
+		val inputComponents = (for (component <- inputJson("components").arr) yield {
+			CircuitComponent.fromJson(component.obj)
+		}).toSeq
+		Circuit(
+			nodes = inputNodes,
+			components = inputComponents
+			)
+	}
+
 }

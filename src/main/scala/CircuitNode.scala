@@ -1,5 +1,3 @@
-import upickle.default.{ReadWriter, macroRW}
-
 case class CircuitNode(name: String) {
 	def combined(rhs: CircuitNode): CircuitNode =	CircuitNode(name + rhs.name)
 	override def toString: String = name
@@ -12,5 +10,6 @@ object CircuitNode {
 	def ground: CircuitNode = CircuitNode("0")
 	def via0: CircuitNode = CircuitNode("VIA0")
 
-	implicit val rw: ReadWriter[CircuitNode] = macroRW
+	def fromJson(inputJson: ujson.Obj): CircuitNode =
+		CircuitNode(name = inputJson("name").toString())
 }

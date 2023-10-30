@@ -1,4 +1,6 @@
- object ASTNodeType extends Enumeration {
+import ujson.Obj
+
+object ASTNodeType extends Enumeration {
 	type ASTNodeType = Value
 	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, End = Value
 }
@@ -84,6 +86,32 @@ abstract class ASTNode(
 	}
 }
 
+ object ASTNode {
+	 def fromJson(inputJson: Obj): ASTNode = {
+		 val nType = inputJson("type").str
+		 if (nType == "Capacitor")
+			 ASTCapacitor.fromJson(inputJson)
+		 else if (nType == "Resistor")
+			 ASTResistor.fromJson(inputJson)
+		 else if (nType == "Inductor")
+		 	ASTInductor.fromJson(inputJson)
+		 else if (nType == "Series")
+			 ASTSeries.fromJson(inputJson)
+		 else if (nType == "Parallel")
+			 ASTParallel.fromJson(inputJson)
+		 else if (nType == "Via0")
+			 ASTVIA0.fromJson(inputJson)
+		 else if (nType == "ThreeGND")
+			 ASTThreeGND.fromJson(inputJson)
+		 else if (nType == "End")
+			 ASTEnd.fromJson(inputJson)
+		 else {
+				 println(s"OMG, got a node of type $nType")
+				 ASTEnd()
+		 }
+	 }
+ }
+
 abstract class ASTNodeWithValue(
 	nodeValueType: ASTNodeType.ASTNodeType,
 	nvCons: ASTNode,
@@ -140,6 +168,18 @@ case class ASTCapacitor(
 		cCons = constructors.head,
 		value = value
 	)
+
+}
+object ASTCapacitor {
+	def apply(cCons: ASTNode, value: Float): ASTCapacitor = new ASTCapacitor(cCons, value)
+
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTCapacitor(
+			cCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			value = inputJson("value").str.toFloat
+		)
+	}
 }
 
 case class ASTResistor(
@@ -175,6 +215,18 @@ case class ASTResistor(
 	)
 }
 
+object ASTResistor {
+	def apply(cCons: ASTNode, value: Float): ASTResistor = new ASTResistor(cCons, value)
+
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTResistor(
+			cCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			value = inputJson("value").str.toFloat
+		)
+	}
+}
+
 case class ASTInductor(
 	cCons: ASTNode,
 	value: Float
@@ -208,6 +260,18 @@ case class ASTInductor(
 	)
 }
 
+object ASTInductor {
+	def apply(cCons: ASTNode, value: Float): ASTInductor = new ASTInductor(cCons, value)
+
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTInductor(
+			cCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			value = inputJson("value").str.toFloat
+		)
+	}
+}
+
 case class ASTThreeGND(
 	aCons: ASTNode,
 	bCons: ASTNode,
@@ -215,10 +279,22 @@ case class ASTThreeGND(
 ) extends ASTNode(nodeType = ASTNodeType.ThreeGND, constructors = Seq(aCons, bCons, gndCons)) {
 
 	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons, gndCons)): ASTNode = ASTThreeGND(
-		aCons = constructors(0),
+		aCons = constructors.head,
 		bCons = constructors(1),
 		gndCons = constructors(2)
 	)
+}
+
+object ASTThreeGND {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTThreeGND(
+			aCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			bCons = ASTNode.fromJson(inputCons.arr(1).obj),
+			gndCons = ASTNode.fromJson(inputCons.arr(2).obj)
+		)
+	}
+
 }
 
 case class ASTParallel(
@@ -226,9 +302,19 @@ case class ASTParallel(
 	bCons: ASTNode
 ) extends ASTNode(nodeType = ASTNodeType.Parallel, constructors = Seq(aCons, bCons)) {
 	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons)): ASTNode = ASTParallel(
-		aCons = constructors(0),
+		aCons = constructors.head,
 		bCons = constructors(1)
 	)
+}
+
+object ASTParallel {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTParallel(
+			aCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			bCons = ASTNode.fromJson(inputCons.arr(1).obj)
+		)
+	}
 }
 
 case class ASTSeries(
@@ -236,9 +322,19 @@ case class ASTSeries(
 	bCons: ASTNode
 ) extends ASTNode(nodeType = ASTNodeType.Series, constructors = Seq(aCons, bCons)) {
 	override def copy(constructors: Seq[ASTNode] = Seq(aCons, bCons)): ASTNode = ASTSeries(
-		aCons = constructors(0),
+		aCons = constructors.head,
 		bCons = constructors(1)
 	)
+}
+
+object ASTSeries {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTSeries(
+			aCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			bCons = ASTNode.fromJson(inputCons.arr(1).obj)
+		)
+	}
 }
 
 case class ASTVIA0(
@@ -246,9 +342,21 @@ case class ASTVIA0(
 	vCons: ASTNode
 ) extends ASTNode(nodeType = ASTNodeType.Via0, constructors = Seq(aCons,  vCons)) {
 	override def copy(constructors: Seq[ASTNode] = Seq(aCons, vCons)): ASTNode = ASTVIA0(
-		aCons = constructors(0),
+		aCons = constructors.head,
 		vCons = constructors(1)
 	)
+}
+
+object ASTVIA0 {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputConstructors = (for (cons <- inputJson("constructors").arr) yield {
+			ASTNode.fromJson(cons.obj)
+		}).toSeq
+		new ASTVIA0(
+			aCons = inputConstructors.head,
+			vCons = inputConstructors(1),
+		)
+	}
 }
 
  class ASTEnd extends ASTNode(nodeType = ASTNodeType.End, constructors = Seq()) {
@@ -259,4 +367,6 @@ case class ASTVIA0(
 
  object ASTEnd {
 	 def apply(): ASTEnd = new ASTEnd
+
+	 def fromJson(inputJson: Obj): ASTNode = new ASTEnd
  }
