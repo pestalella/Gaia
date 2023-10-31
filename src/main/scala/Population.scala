@@ -97,7 +97,12 @@ object Population {
 	}
 
 	def fromJson(inputJson: Obj): Population = {
+		var currentMember = 0
+		val totalMembers = inputJson("members").arr.size
+		println(s"Reading a total of $totalMembers members")
 		val inputMembers = (for (member <- inputJson("members").arr) yield {
+			currentMember += 1
+			if (currentMember%100 == 50) println(s"$currentMember/$totalMembers members read.")
 			PopulationMember.fromJson(member.obj)
 		}).toSeq
 		Population(members = inputMembers)

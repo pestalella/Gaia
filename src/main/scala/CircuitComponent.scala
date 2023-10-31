@@ -131,6 +131,7 @@ case class CircuitInductor(
 	value: Float,
 	inductorNumber: Int
 ) extends CircuitComponent {
+	require(value <= 8)
 	override def remapNodes(oldNodes: Seq[CircuitNode], newNode: CircuitNode): CircuitComponent = {
 		CircuitInductor(super.remapped(oldNodes, newNode), value)
 	}
@@ -157,7 +158,7 @@ object CircuitInductor {
 		value: Float
 	): CircuitInductor = {
 		counter += 1
-		new CircuitInductor(nodes = nodes, value = value, inductorNumber = counter)
+		new CircuitInductor(nodes = nodes, value = scala.math.min(8, value), inductorNumber = counter)
 	}
 
 	def reset(): Unit = {
