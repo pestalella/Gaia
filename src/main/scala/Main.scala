@@ -50,7 +50,7 @@ object Main {
         println("File read. Converting to JSON")
         val inputJSON = ujson.read(inputPopString).obj
         println("JSON object now available. Deserializing population.")
-        Population.fromJson(ujson.read(inputPopString).obj)
+        Population.fromJson(inputJSON)
       }
     }.get
   }
