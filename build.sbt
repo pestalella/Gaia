@@ -13,5 +13,7 @@ libraryDependencies ++= Seq(
 	"org.scalatest" %% "scalatest" % "latest.integration" % Test
 )
 // Parallel collections support
-libraryDependencies +=
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+
+// Doodle, for charts and graphics
+libraryDependencies += "org.creativescala" %% "doodle" % "0.19.0"

@@ -1,4 +1,4 @@
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import scala.sys.process._
 
 object CircuitPlotter {
@@ -17,7 +17,7 @@ object CircuitPlotter {
 		import scala.sys.process._
 		val simCommand = s"ngspice  -b $filename"
 		plotter = simCommand.run(log = ProcessLogger(_ => {}))
-		//		new File(filename).delete()
+		//new File(filename).delete()
 	}
 
 }

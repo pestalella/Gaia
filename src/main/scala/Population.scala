@@ -5,12 +5,9 @@ import java.io.PrintWriter
 
 case class Population(members: Seq[PopulationMember]) {
 	def measurePopulationFitness(): Seq[PopulationMember] = {
-		val measuredPop = members.par.map(c =>
-			PopulationMember(
-				circuit = c.circuit,
-				generator = c.generator,
-				fitness = c.circuit.calcFitness()
-			)
+		val fitEval = LowPassFilter(limitFreq = 5000)
+		val measuredPop = members.par.map(m =>
+			m.copy(fitness = m.circuit.calcFitness(fitEval))
 		).toIndexedSeq
 		measuredPop.sortWith((a, b) => a.fitness < b.fitness)
 	}
