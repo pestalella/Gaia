@@ -1,14 +1,19 @@
 import ujson._
-import scala.collection.parallel.CollectionConverters._
 
+import scala.collection.parallel.CollectionConverters._
 import java.io.PrintWriter
+import java.util.concurrent.TimeUnit
 
 case class Population(members: Seq[PopulationMember]) {
+	private val evaluator = CircuitEvaluator
 	def measurePopulationFitness(): Seq[PopulationMember] = {
+		val n = System.nanoTime()
 		val fitEval = LowPassFilter(limitFreq = 5000)
 		val measuredPop = members.par.map(m =>
-			m.copy(fitness = m.circuit.calcFitness(fitEval))
+			m.copy(fitness = evaluator.calcFitness(m.circuit, fitEval))
 		).toIndexedSeq
+		val n1 = System.nanoTime()
+		println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
 		measuredPop.sortWith((a, b) => a.fitness < b.fitness)
 	}
 
