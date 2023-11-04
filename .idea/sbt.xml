@@ -13,6 +13,16 @@
         </option>
         <option name="sbtVersion" value="1.9.2" />
       </SbtProjectSettings>
+      <SbtProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/FitnessEvaluatorRemote" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/FitnessEvaluatorRemote" />
+            <option value="$PROJECT_DIR$/FitnessEvaluatorRemote/project" />
+          </set>
+        </option>
+        <option name="sbtVersion" value="1.9.7" />
+      </SbtProjectSettings>
     </option>
   </component>
 </project>
