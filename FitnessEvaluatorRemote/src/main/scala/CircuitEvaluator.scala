@@ -1,35 +1,55 @@
-import java.io.File
-import scala.util.{Try, Failure, Success}
+import GaiaCommon.{FitnessCalculator, SimDataPoint}
+
+import java.io.{File, PrintWriter}
+import java.nio.file.Files
+import scala.sys.process._
+import scala.util.{Failure, Success, Try}
 
 object CircuitEvaluator {
-	def calcFitness(circuit: Circuit, fitEval: FitnessCalculator): Double = {
-		val simData = simulationResults(circuit)
+	def calcFitness(circuitSpice: String, fitEval: FitnessCalculator): Double = {
+		val simData = simulationResults(circuitSpice)
 		if (simData.isEmpty)
 			1E10
 		else {
-			fitEval.calc(simData) * (1.0 + circuit.components.size * 0.00001)
+			fitEval.calc(simData)
 		}
 	}
 
-	private def simulationResults(circuit: Circuit): Seq[SimDataPoint] =
+	private def simulationResults(circuitSpice: String): Seq[SimDataPoint] =
 		parseSimResult(
-			simulateCircuit(circuit)
+			simulateCircuit(circuitSpice)
 		)
 
-	private def simulateCircuit(circuit: Circuit): String = {
-		circuit.writeCircuit()
-		import scala.sys.process._
-		val simCommand = s"ngspice  -b test_${circuit.circuitNumber}.cir"
-		val result = Try {
-			simCommand.!!(ProcessLogger(_ => ()))
+	private def simulateCircuit(circuitSpice: String): String = {
+		val tempName = Try {
+			Files.createTempFile("circuit_", ".cir").toString
 		}
-		result match {
+		val circuitFileName = tempName match {
 			case Failure(e) =>
-				println(s"Circuit ${circuit.circuitNumber} failed to run on ngspice. Error was: ${e.getMessage}")
+				println(s"Unable to create temporary file. Error was: ${e.getMessage}")
 				""
 			case Success(output) =>
-				new File(s"test_${circuit.circuitNumber}.cir").delete()
-				output
+				tempName.toString
+		}
+		if (circuitFileName.isEmpty) {
+			""
+		} else {
+			new PrintWriter(circuitFileName) {
+				write(circuitSpice)
+				close()
+			}
+			val simCommand = s"ngspice  -b $circuitFileName"
+			val result = Try {
+				simCommand.!!(ProcessLogger(_ => ()))
+			}
+			result match {
+				case Failure(e) =>
+					println(s"Circuit $circuitFileName failed to run on ngspice. Error was: ${e.getMessage}")
+					""
+				case Success(output) =>
+					new File(circuitFileName).delete()
+					output
+			}
 		}
 	}
 

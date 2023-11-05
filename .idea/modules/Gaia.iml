@@ -54,5 +54,7 @@
     <orderEntry type="library" name="sbt: org.typelevel:cats-effect_2.13:3.5.1:jar" level="project" />
     <orderEntry type="library" name="sbt: org.typelevel:cats-free_2.13:2.9.0:jar" level="project" />
     <orderEntry type="library" name="sbt: org.typelevel:cats-kernel_2.13:2.9.0:jar" level="project" />
+    <orderEntry type="module" module-name="GaiaCommon" />
+    <orderEntry type="library" name="typesafe.akka.actor_2.13" level="project" />
   </component>
 </module>

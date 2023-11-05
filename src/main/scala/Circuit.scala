@@ -62,13 +62,6 @@ class Circuit(
 		}
 	}
 
-	def writeCircuit(): Unit = {
-		new PrintWriter(s"test_$circuitNumber.cir") {
-			write(toSpice)
-			close()
-		}
-	}
-
 	def toUndecoratedSpice: String = {
 		(for {
 			component <- components

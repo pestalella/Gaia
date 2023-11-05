@@ -6,6 +6,8 @@
       <module fileurl="file://$PROJECT_DIR$/FitnessEvaluatorRemote/.idea/modules/FitnessEvaluatorRemote-build.iml" filepath="$PROJECT_DIR$/FitnessEvaluatorRemote/.idea/modules/FitnessEvaluatorRemote-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Gaia.iml" filepath="$PROJECT_DIR$/.idea/modules/Gaia.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Gaia-build.iml" filepath="$PROJECT_DIR$/.idea/modules/Gaia-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/GaiaCommon.iml" filepath="$PROJECT_DIR$/.idea/modules/GaiaCommon.iml" />
+      <module fileurl="file://$PROJECT_DIR$/GaiaCommon/.idea/modules/GaiaCommon-build.iml" filepath="$PROJECT_DIR$/GaiaCommon/.idea/modules/GaiaCommon-build.iml" />
     </modules>
   </component>
 </project>
