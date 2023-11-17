@@ -1,0 +1,3 @@
+package GaiaCommon
+
+trait CommandResult

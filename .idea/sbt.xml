@@ -8,6 +8,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/FitnessEvaluatorRemote" />
+            <option value="$PROJECT_DIR$/GaiaCommon" />
+            <option value="$PROJECT_DIR$/Master" />
             <option value="$PROJECT_DIR$/project" />
           </set>
         </option>

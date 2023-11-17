@@ -29,11 +29,13 @@ object CircuitEvaluator {
 				println(s"Unable to create temporary file. Error was: ${e.getMessage}")
 				""
 			case Success(output) =>
-				tempName.toString
+				output
 		}
 		if (circuitFileName.isEmpty) {
 			""
 		} else {
+			//			println(s"Writing circuit to file [$circuitFileName]")
+			//			println(s"--- Contents: [$circuitSpice]")
 			new PrintWriter(circuitFileName) {
 				write(circuitSpice)
 				close()
