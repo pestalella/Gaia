@@ -5,13 +5,9 @@ import akka.pattern.ask
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import scala.io.StdIn
 import scala.language.postfixOps
 import GaiaCommon.EvalCommand
-import com.typesafe.config.ConfigFactory
-import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
-import GaiaCommon.{EvalCommand, FitnessCalculator, CommandResult, FitnessError, FitnessResult}
+import GaiaCommon.CommandResult
 
 case object Init
 
@@ -28,15 +24,11 @@ class LocalFitnessMaster {
 
 object LocalFitnessMaster {
 	var connectionEstablished = false
-	implicit val system = ActorSystem("LocalFitnessSystem")
+	implicit val system: ActorSystem = ActorSystem("LocalFitnessSystem")
 
-	val evaluator = system.actorOf(Props[LocalFitnessRequester], name = "LocalFitnessRequester")
+	private val evaluator = system.actorOf(Props[LocalFitnessRequester], name = "LocalFitnessRequester")
 
 	evaluator ! Init
-	//	StdIn.readLine()
-	//	system.terminate()
-	//	StdIn.readLine()
-
 }
 
 

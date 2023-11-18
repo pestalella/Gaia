@@ -3,7 +3,6 @@ import akka.actor.{ActorSystem, Props}
 
 import java.io.PrintWriter
 import java.util.concurrent.TimeUnit
-import scala.collection.parallel.CollectionConverters._
 import ujson._
 
 import scala.concurrent.Await
