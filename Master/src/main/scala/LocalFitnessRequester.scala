@@ -15,12 +15,12 @@ case class PendingResponse(transactionID: Int, requester: ActorRef)
 case class AddWork(request: EvalCommand)
 
 class LocalFitnessRequester() extends Actor {
-	val path = "akka://RemoteFitnessSystem@127.0.0.1:4444/user/FitnessEvaluatorActor"
+	private val path = "akka://RemoteFitnessSystem@127.0.0.1:4444/user/FitnessEvaluatorActor"
 	context.setReceiveTimeout(3 seconds)
 	private val log = Logging(context.system, this)
 	log.info("identifying")
-	var pendingWork = new mutable.Queue[WorkRequest]()
-	var pendingResponses = new mutable.Queue[PendingResponse]()
+	private var pendingWork = new mutable.Queue[WorkRequest]()
+	private var pendingResponses = new mutable.Queue[PendingResponse]()
 
 	def receive: Receive = identifying
 
