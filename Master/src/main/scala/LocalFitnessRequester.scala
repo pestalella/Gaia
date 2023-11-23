@@ -11,11 +11,13 @@ import scala.collection.mutable
 case object Start
 
 case class WorkRequest(work: EvalCommand, requester: ActorRef)
+
+object SendMoreWork
 case class PendingResponse(transactionID: Int, requester: ActorRef)
 case class AddWork(request: EvalCommand)
 
 class LocalFitnessRequester() extends Actor {
-	private val path = "akka://RemoteFitnessSystem@127.0.0.1:4444/user/FitnessEvaluatorActor"
+	private val path = "akka://RemoteFitnessSystem@10.0.200.227:4444/user/FitnessEvaluatorActor"
 	context.setReceiveTimeout(3 seconds)
 	private val log = Logging(context.system, this)
 	log.info("identifying")
@@ -56,6 +58,14 @@ class LocalFitnessRequester() extends Actor {
 				pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
 				actor ! workRequest.work
 			}
+		case SendMoreWork =>
+			log.info(s"RECEIVED SendMoreWork from ${sender().path.toString}")
+			if (pendingWork.nonEmpty) {
+				log.info("Got work to send. Sending now.")
+				val workRequest = pendingWork.dequeue()
+				pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
+				actor ! workRequest.work
+			}
 		case r: FitnessResult =>
 			log.info(s"Got FitnessResult: $r")
 			val respCandidate = pendingResponses.find(response => response.transactionID == r.transactionID)
@@ -65,6 +75,8 @@ class LocalFitnessRequester() extends Actor {
 					pendingResponse.requester ! r
 					log.info("Removing result from pending responses")
 					pendingResponses = pendingResponses filterNot (p => p.transactionID == r.transactionID)
+					if (pendingWork.nonEmpty)
+						self ! SendMoreWork
 				case None => log.warning(s"Received response with an unexpected transactionID: ${r.transactionID}")
 			}
 		case e: FitnessError => log.info(s"Got FitnessError: $e")
