@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import GaiaCommon.{FitnessError, FitnessResult}
-
+import akka.actor.Status
 
 case class Population(members: Seq[PopulationMember]) {
 	//	private val evaluator = CircuitEvaluator
@@ -19,14 +19,7 @@ case class Population(members: Seq[PopulationMember]) {
 		//		val fitEval = GaiaCommon.LowPassFilter(limitFreq = 5000)
 		val measureResult = Population.evaluator.calcFitness(members map (_.circuit.toSpice))
 		println("Population: measurement request sent")
-		val evaluation = measureResult.map {
-			case e: FitnessError =>
-				println(s"Error computing fitness: [${e.message}]")
-				Seq[Double]()
-			case f: FitnessResult =>
-				f.fitness
-		}
-		val measuredFitness = Await.result(evaluation, 200 seconds)
+		val measuredFitness = Await.result(measureResult, 200 seconds)
 		println("Population: measurement received")
 		val measuredPop = members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2))
 		val n1 = System.nanoTime()

@@ -61,7 +61,9 @@ class LocalFitnessRequester() extends Actor {
 			val respCandidate = pendingResponses.find(response => response.transactionID == r.transactionID)
 			respCandidate match {
 				case Some(pendingResponse) =>
+					log.info("Sending result to requester")
 					pendingResponse.requester ! r
+					log.info("Removing result from pending responses")
 					pendingResponses = pendingResponses filterNot (p => p.transactionID == r.transactionID)
 				case None => log.warning(s"Received response with an unexpected transactionID: ${r.transactionID}")
 			}

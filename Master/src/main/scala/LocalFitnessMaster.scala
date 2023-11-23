@@ -1,32 +1,47 @@
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import akka.pattern.ask
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.language.postfixOps
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success, Try}
 import GaiaCommon.EvalCommand
-import GaiaCommon.CommandResult
+import GaiaCommon.{CommandResult, FitnessError, FitnessResult}
+import akka.actor.Status.Status
 
 case object Init
 
 class LocalFitnessMaster {
-	def calcFitness(circuits: Seq[String]): Future[CommandResult] = {
+	def calcFitness(circuits: Seq[String]): Future[Seq[Double]] = {
 		println("#########################################################")
 		println("               Sending compute request")
 		println("#########################################################")
+
+		val jobpieces = circuits.sliding(1250, 1250)
+		//		println(s"Sending ${jobpieces.length} pieces of work")
 		implicit val timeout: Timeout = Timeout(30 seconds)
-		val cmd = EvalCommand(transactionID = 1, circuits = circuits, fitnessSelector = "")
-		(LocalFitnessMaster.evaluator ? AddWork(cmd)).mapTo[CommandResult]
+		val eval = jobpieces.zipWithIndex map (work => {
+			val cmd = EvalCommand(transactionID = work._2, circuits = work._1, fitnessSelector = "")
+			(LocalFitnessMaster.evaluator ? AddWork(cmd)).mapTo[CommandResult]
+		})
+		val futureResults = Future.sequence(eval.toSeq)
+		for {res <- futureResults} yield {
+			res.foldLeft(Seq[Double]())((accum, status) => status match {
+				case r: FitnessResult => accum ++ r.fitness
+				case e: FitnessError =>
+					println(s"Got an error message from the evaluator: [${e.message}")
+					accum
+			})
+		}
 	}
 }
 
 object LocalFitnessMaster {
-	var connectionEstablished = false
 	implicit val system: ActorSystem = ActorSystem("LocalFitnessSystem")
-
-	private val evaluator = system.actorOf(Props[LocalFitnessRequester], name = "LocalFitnessRequester")
+	val evaluator: ActorRef = system.actorOf(Props[LocalFitnessRequester], name = "LocalFitnessRequester")
 
 	evaluator ! Init
 }
