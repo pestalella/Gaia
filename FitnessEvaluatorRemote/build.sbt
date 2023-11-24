@@ -4,6 +4,19 @@ ThisBuild / trackInternalDependencies := TrackLevel.TrackAlways
 
 // Parallel collections support
 libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.9" % Test
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0"
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.9" % Test
+libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.7.0"
+
+//assemblyMergeStrategy in assembly := {
+// case PathList("META-INF", _*) => MergeStrategy.discard
+// case _                        => MergeStrategy.first
+//}
+
+assemblyMergeStrategy in assembly := {
+	case PathList("META-INF", xs@_*) => MergeStrategy.discard
+	case x =>
+		val oldStrategy = (assemblyMergeStrategy in assembly).value
+		oldStrategy(x)
+}

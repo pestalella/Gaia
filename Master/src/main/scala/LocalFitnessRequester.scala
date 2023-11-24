@@ -1,4 +1,4 @@
-import GaiaCommon.{EvalCommand, FitnessResult, FitnessError}
+import GaiaCommon.{EvalCommand, FitnessError, FitnessResult, NodeStartAcknowledge, NodeStartRequest}
 import akka.actor._
 import akka.util.Timeout
 import akka.event.Logging
@@ -11,18 +11,18 @@ import scala.collection.mutable
 case object Start
 
 case class WorkRequest(work: EvalCommand, requester: ActorRef)
-
 object SendMoreWork
 case class PendingResponse(transactionID: Int, requester: ActorRef)
 case class AddWork(request: EvalCommand)
 
 class LocalFitnessRequester() extends Actor {
-	private val path = "akka://RemoteFitnessSystem@10.0.200.227:4444/user/FitnessEvaluatorActor"
-	context.setReceiveTimeout(3 seconds)
+	//	private val path = "akka://RemoteFitnessSystem@10.0.200.227:4444/user/FitnessEvaluatorActor"
+	context.setReceiveTimeout(30 seconds)
 	private val log = Logging(context.system, this)
 	log.info("identifying")
 	private var pendingWork = new mutable.Queue[WorkRequest]()
 	private var pendingResponses = new mutable.Queue[PendingResponse]()
+	private var workingNodes = new mutable.Queue[ActorRef]()
 
 	def receive: Receive = identifying
 
@@ -31,49 +31,70 @@ class LocalFitnessRequester() extends Actor {
 			log.info(s"Added work to the pending work queue before INIT")
 			pendingWork.enqueue(WorkRequest(w, sender))
 		case Init =>
-			implicit val resolveTimeout: Timeout = Timeout(5 seconds)
 			log.info("INIT: locating remote actor")
-			for (ref: ActorRef <- context.actorSelection(path).resolveOne()) {
-				log.info("Resolved remote actor ref using Selection")
-				context.watch(ref)
-				context.become(active(ref))
-				context.setReceiveTimeout(Duration.Undefined)
-				self ! Start
-			}
+		//			for (ref: ActorRef <- context.actorSelection(path).resolveOne()) {
+		//				log.info("Resolved remote actor ref using Selection")
+		//				context.watch(ref)
+		//			}
+		case NodeStartRequest =>
+			// Write down the actor that sent the message
+			workingNodes.enqueue(sender())
+			println(s"A new remote actor sent a start message [${sender().path.toString}")
+			sender ! NodeStartAcknowledge
+
+			context.become(active)
+			context.setReceiveTimeout(Duration.Undefined)
+			self ! Start
 
 		case ReceiveTimeout => println("timeout")
 	}
 
-	def active(actor: ActorRef): Receive = {
+	private def sendWork(work: EvalCommand) = {
+		// Get the first worker
+		val worker = workingNodes.dequeue()
+		println(s"Got work to send. Sending it to ${worker.path.toString}.")
+		worker ! work
+		// Return the worker to the end of the queue of workers
+		workingNodes.enqueue(worker)
+	}
+
+	def active: Receive = {
 		case AddWork(w) =>
-			log.info("Got work to send. Sending now.")
 			pendingResponses enqueue PendingResponse(transactionID = w.transactionID, requester = sender)
-			actor ! w
+			if (workingNodes.nonEmpty) {
+				sendWork(w)
+			}
+		case NodeStartRequest =>
+			// Write down the actor that sent the message
+			workingNodes.enqueue(sender())
+			sender ! NodeStartAcknowledge
 		case Start =>
-			log.info(s"RECEIVED START from ${sender().path.toString}")
+			println(s"RECEIVED START from ${sender().path.toString}")
 			//actor ! "Hello from the LocalFitnessRequester"
 			if (pendingWork.nonEmpty) {
-				log.info("Got work to send. Sending now.")
 				val workRequest = pendingWork.dequeue()
 				pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
-				actor ! workRequest.work
+				if (workingNodes.nonEmpty) {
+					sendWork(workRequest.work)
+				}
 			}
 		case SendMoreWork =>
-			log.info(s"RECEIVED SendMoreWork from ${sender().path.toString}")
+			println(s"RECEIVED SendMoreWork from ${sender().path.toString}")
 			if (pendingWork.nonEmpty) {
-				log.info("Got work to send. Sending now.")
 				val workRequest = pendingWork.dequeue()
 				pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
-				actor ! workRequest.work
+				if (workingNodes.nonEmpty) {
+					sendWork(workRequest.work)
+				}
 			}
 		case r: FitnessResult =>
-			log.info(s"Got FitnessResult: $r")
+			println(s"Got FitnessResult from ${sender.path.toString}")
 			val respCandidate = pendingResponses.find(response => response.transactionID == r.transactionID)
 			respCandidate match {
 				case Some(pendingResponse) =>
-					log.info("Sending result to requester")
+					println("Sending result to requester")
 					pendingResponse.requester ! r
-					log.info("Removing result from pending responses")
+					println("Removing result from pending responses")
 					pendingResponses = pendingResponses filterNot (p => p.transactionID == r.transactionID)
 					if (pendingWork.nonEmpty)
 						self ! SendMoreWork
@@ -81,8 +102,8 @@ class LocalFitnessRequester() extends Actor {
 			}
 		case e: FitnessError => log.info(s"Got FitnessError: $e")
 
-		case Terminated(`actor`) =>
-			println("Receiver terminated")
-			context.system.terminate()
+		//		case Terminated(`actor`) =>
+		//			println("Receiver terminated")
+		//			context.system.terminate()
 	}
 }

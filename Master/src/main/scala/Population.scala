@@ -19,7 +19,7 @@ case class Population(members: Seq[PopulationMember]) {
 		//		val fitEval = GaiaCommon.LowPassFilter(limitFreq = 5000)
 		val measureResult = Population.evaluator.calcFitness(members map (_.circuit.toSpice))
 		println("Population: measurement request sent")
-		val measuredFitness = Await.result(measureResult, 200 seconds)
+		val measuredFitness = Await.result(measureResult, 20000 seconds)
 		println("Population: measurement received")
 		val measuredPop = members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2))
 		val n1 = System.nanoTime()
