@@ -30,7 +30,9 @@ class LocalFitnessMaster {
 		val futureResults = Future.sequence(eval.toSeq)
 		for {res <- futureResults} yield {
 			res.foldLeft(Seq[Double]())((accum, status) => status match {
-				case r: FitnessResult => accum ++ r.fitness
+				case r: FitnessResult =>
+					//					println(s"[MASTER] Got a FitnessResult: trID=${r.transactionID}")
+					accum ++ r.fitness
 				case e: FitnessError =>
 					println(s"Got an error message from the evaluator: [${e.message}")
 					accum
