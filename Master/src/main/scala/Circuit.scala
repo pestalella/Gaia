@@ -93,10 +93,10 @@ class Circuit(
 			"RLOAD B 0 1k",
 			toUndecoratedSpice,
 			".AC DEC 1 10 100",
-			".PRINT AC V(B)",
+			".PRINT AC v(B)",
 			".CONTROL",
 			s"AC DEC ${Parameters.simulationDataPoints} 10 200k",
-			"GNUPLOT circuitV V(B)",
+			s"GNUPLOT circuitPlot db(B)",
 			"OPTION NOACCT",
 			".ENDC",
 			".END"
