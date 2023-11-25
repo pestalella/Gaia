@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 class Evolver(
 	val population: Population
 ) {
@@ -11,7 +13,7 @@ class Evolver(
 			val measuredPopulation = pop.measurePopulationFitness()
 			bestFitness = measuredPopulation.head.fitness
 			if (lastBestFitness != bestFitness) {
-				pop.writeToFile(fileName = s"population_gen${Population.generation}.json")
+				pop.writeToFile(fileName = Parameters.workDirectory.resolve(s"population_gen${Population.generation}.json").toString)
 				CircuitPlotter.plotCircuit(measuredPopulation.head.circuit, Population.generation)
 				println("Best individual:")
 				println(s"\nGenerator:${measuredPopulation.head.generator.toString}")

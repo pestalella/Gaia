@@ -9,6 +9,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
+import scala.util.{Try, Success, Failure}
+
 import GaiaCommon.{FitnessError, FitnessResult}
 import akka.actor.Status
 
@@ -21,10 +23,17 @@ case class Population(members: Seq[PopulationMember]) {
 		println("Population: measurement request sent")
 		val measuredFitness = Await.result(measureResult, 20000 seconds)
 		println("Population: measurement received")
-		val measuredPop = members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2))
 		val n1 = System.nanoTime()
 		println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
-		measuredPop.sortWith((a, b) => a.fitness < b.fitness)
+		val measuredPop = Try {
+			members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2))
+		}
+		measuredPop match {
+			case Success(measured) => measured.sortWith((a, b) => a.fitness < b.fitness)
+			case Failure(s) =>
+				println(s"[ERROR] There was a problem measuring population: $s")
+				members
+		}
 	}
 
 	def toJson: Obj = {
@@ -86,7 +95,7 @@ object Population {
 		println(s"Generation $generation fitness: ${sortedPop.head.fitness}")
 		val accummulatedFitness = sortedPop.tail.scanLeft(sortedPop.head.copy(fitness = 1.0 / sortedPop.head.fitness))(
 			(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
-		val newPop = (for (_ <- 1 until sortedPop.size / 2+1) yield {
+		val newPop = (for (_ <- 1 until Parameters.populationSize / 2 + 1) yield {
 			val parent1 = Population.selectMember(accummulatedFitness)
 			val parent2 = Population.selectMember(accummulatedFitness)
 			val Seq(candidate1, candidate2) = ASTOperations.crossover(parent1.generator, parent2.generator)
