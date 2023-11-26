@@ -23,14 +23,6 @@ class Evolver(
 			println("Generating new population")
 			pop = Population.nextPopulation(measuredPopulation)
 		} while (bestFitness > Parameters.targetFitness)
-		printPopulationStatistics(pop)
-	}
-
-	private def printPopulationStatistics(pop: Population): Unit = {
-		val sortedPop = pop.measurePopulationFitness()
-		val best = sortedPop.head
-		println(s"Best individual:\n$best")
-		CircuitPlotter.plotCircuit(best.circuit, Population.generation)
 	}
 }
 
