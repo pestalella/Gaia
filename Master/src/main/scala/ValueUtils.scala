@@ -9,7 +9,10 @@ object ValueUtils {
 		val lostExponent = scala.math.pow(10, (integerPart.toInt + 1) % 3)
 		val sss = scala.math.round(scala.math.pow(valTen, 1/12.0) * lostExponent)
 		val expPlus11 = (value + 1.0).toInt/3
-		sss.toInt.toString + s"${siPrefixes(expPlus11)}"
+		if (expPlus11 >= 0 && expPlus11 < siPrefixes.size)
+			sss.toInt.toString + s"${siPrefixes(expPlus11)}"
+		else
+			"NaN"
 	}
 	def valueToCapValue(value: Double): String = {
 		valueToE12Value(value) + "F"
