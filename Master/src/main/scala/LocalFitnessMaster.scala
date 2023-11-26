@@ -20,10 +20,10 @@ class LocalFitnessMaster {
 		println("               Sending compute request")
 		println("#########################################################")
 
-		val jobpieces = circuits.sliding(1000, 1000)
-		//		println(s"Sending ${jobpieces.length} pieces of work")
+		val jobPieces = circuits.sliding(1000, 1000)
+		//		println(s"Sending ${jobPieces.length} pieces of work")
 		implicit val timeout: Timeout = Timeout(30000 seconds)
-		val eval = jobpieces.zipWithIndex map (work => {
+		val eval = jobPieces.zipWithIndex map (work => {
 			val cmd = EvalCommand(transactionID = work._2, circuits = work._1, fitnessSelector = "")
 			(LocalFitnessMaster.evaluator ? AddWork(cmd)).mapTo[CommandResult]
 		})
