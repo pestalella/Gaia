@@ -6,11 +6,11 @@ object ConnectToMaster
 
 object RemoteFitnessEvaluator extends App {
 	val config = ConfigFactory.load()
-	val system = ActorSystem.create("RemoteFitnessSystem", config);
+	val system = ActorSystem.create("RemoteFitnessSystem", config)
 	val worker = system.actorOf(Props[FitnessEvaluatorActor], name = "FitnessEvaluatorActor")
 	worker ! ConnectToMaster
 
-	StdIn.readLine()
-	system.terminate()
-	StdIn.readLine()
+	while (true) {
+		Thread.sleep(100000L)
+	}
 }
