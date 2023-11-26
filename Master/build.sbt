@@ -9,4 +9,12 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" 
 
 // Akka library
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.7.0"
-libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0" % "provided"
+libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.7.0"
+
+assemblyMergeStrategy in assembly := {
+	case PathList("META-INF", xs@_*) => MergeStrategy.discard
+	case x =>
+		val oldStrategy = (assemblyMergeStrategy in assembly).value
+		oldStrategy(x)
+}
