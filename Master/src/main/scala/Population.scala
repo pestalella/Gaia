@@ -1,6 +1,4 @@
 
-import akka.actor.{ActorSystem, Props}
-
 import java.io.PrintWriter
 import java.util.concurrent.TimeUnit
 import ujson._
@@ -12,7 +10,6 @@ import scala.language.postfixOps
 import scala.util.{Try, Success, Failure}
 
 import GaiaCommon.{FitnessError, FitnessResult}
-import akka.actor.Status
 
 case class Population(members: Seq[PopulationMember]) {
 	//	private val evaluator = CircuitEvaluator
@@ -22,17 +19,20 @@ case class Population(members: Seq[PopulationMember]) {
 		val measureResult = Population.evaluator.calcFitness(members map (m => m.circuit.toSpice(m.circuitId)))
 		println("Population: measurement request sent")
 		val measuredFitness = Await.result(measureResult, 20000 seconds)
-		println("Population: measurement received")
-		val n1 = System.nanoTime()
-		println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
 		val measuredPop = Try {
 			members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2))
 		}
+		println("Population: measurement received and prepared")
+		val n1 = System.nanoTime()
+		println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
 		measuredPop match {
 			case Success(measured) => measured.sortWith((a, b) => a.fitness < b.fitness)
 			case Failure(s) =>
 				println(s"[ERROR] There was a problem measuring population: $s")
-				members
+				println(s"        Fitness list: $measuredFitness")
+				members map (m => m.copy(
+					fitness = 1E100
+				))
 		}
 	}
 
@@ -91,8 +91,21 @@ object Population {
 		}).get
 	}
 
+	def printPopulationStatistics(sortedPop: Seq[PopulationMember]): Unit = {
+		val totalNodes = sortedPop.foldLeft(0)((accum, m) => accum + m.generator.nodeCount)
+		val totalComponents = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.components.size)
+		val totalCircuitNodes = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.nodes.size)
+		val nodeNameSize = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.nodes.foldLeft(0)((accum, node) => accum + node.name.length))
+		println("## Population statistics:")
+		println(s"#### Total AST nodes: $totalNodes")
+		println(s"#### Total circuit components: $totalComponents")
+		println(s"#### Total circuit nodes: $totalCircuitNodes")
+		println(s"#### Node name size: ${nodeNameSize / 1024} kB")
+	}
+
 	def nextPopulation(sortedPop: Seq[PopulationMember]): Population = {
 		println(s"Generation $generation fitness: ${sortedPop.head.fitness}")
+		printPopulationStatistics(sortedPop)
 		val accummulatedFitness = sortedPop.tail.scanLeft(sortedPop.head.copy(fitness = 1.0 / sortedPop.head.fitness))(
 			(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
 		val newPop = (for (_ <- 1 until Parameters.populationSize / 2 + 1) yield {
