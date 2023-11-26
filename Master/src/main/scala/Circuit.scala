@@ -3,14 +3,12 @@ import ujson._
 
 class Circuit(
 	val nodes: Seq[CircuitNode],
-	val components: Seq[CircuitComponent],
-	val circuitNumber: Int) {
-
+	val components: Seq[CircuitComponent]
+) {
 	def combined(rhs: Circuit): Circuit = {
 		val newCirc = new Circuit(
 			nodes = (nodes ++ rhs.nodes).distinct,
-			components = components ++ rhs.components,
-			circuitNumber = circuitNumber
+			components = components ++ rhs.components
 		)
 		newCirc
 	}
@@ -21,8 +19,7 @@ class Circuit(
 		val noWires = wires.foldLeft(this)((circuit, _) => circuit.removeWired(externalNodes))
 		new Circuit(
 			nodes = noWires.nodes,
-			components = noWires.components filter(comp => comp.nodes.distinct.length != 1),
-			circuitNumber = circuitNumber
+			components = noWires.components filter (comp => comp.nodes.distinct.length != 1)
 		)
 	}
 
@@ -40,8 +37,7 @@ class Circuit(
 				if (nodeCandidates.isEmpty)
 					new Circuit(
 						nodes = nodes,
-						components = filteredComponents,
-						circuitNumber = circuitNumber
+						components = filteredComponents
 					)
 				else {
 					val nodeA = wireToRemove.nodes.head
@@ -54,8 +50,7 @@ class Circuit(
 					}
 					new Circuit(
 						nodes = nodes.filter(!wireToRemove.nodes.contains(_)) :+ nodeToRemain,
-						components = remappedComponents,
-						circuitNumber = circuitNumber
+						components = remappedComponents
 					)
 				}
 			}
@@ -70,9 +65,9 @@ class Circuit(
 		}).mkString("\n")
 	}
 
-	def toSpice: String = {
+	def toSpice(circuitId: Int): String = {
 		Seq(
-			s".TITLE TEST CIRCUIT $circuitNumber",
+			s".TITLE TEST CIRCUIT $circuitId",
 			"",
 			"VIN VS 0 DC 0 AC 1",
 			"RSOURCE VS A 1k",
@@ -85,9 +80,9 @@ class Circuit(
 		).mkString("\n")
 	}
 
-	def toSpicePlot: String = {
+	def toSpicePlot(circuitId: Int): String = {
 		Seq(
-			s".TITLE TEST CIRCUIT $circuitNumber",
+			s".TITLE TEST CIRCUIT $circuitId",
 			"",
 			"VIN A 0 DC 0 AC 1",
 			"RLOAD B 0 1k",
@@ -106,14 +101,13 @@ class Circuit(
 	def toJson: ujson.Obj = {
 		ujson.Obj(
 			"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
-			"components" -> ujson.Arr.from(components map (_.toJson)),
-			"circuitNumber" -> circuitNumber
+			"components" -> ujson.Arr.from(components map (_.toJson))
 		)
 	}
 
-	def writeToFile(fileName: String): Unit = {
+	def writeToFile(fileName: String, circuitId: Int): Unit = {
 		new PrintWriter(fileName) {
-			write(toSpice)
+			write(toSpice(circuitId))
 			close()
 		}
 	}
@@ -121,13 +115,8 @@ class Circuit(
 }
 
 object Circuit {
-	private var circuitCount = 0
 	def apply(nodes: Seq[CircuitNode], components: Seq[CircuitComponent]): Circuit = {
-		circuitCount += 1
-		new Circuit(nodes = nodes, components= components, circuitNumber = circuitCount)
-	}
-	def reset(): Unit = {
-		circuitCount = 0
+		new Circuit(nodes = nodes, components = components)
 	}
 
 	def fromJson(inputJson: Obj): Circuit = {
@@ -140,7 +129,6 @@ object Circuit {
 		Circuit(
 			nodes = inputNodes,
 			components = inputComponents
-			)
+		)
 	}
-
 }

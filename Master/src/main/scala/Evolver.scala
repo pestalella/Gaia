@@ -14,7 +14,7 @@ class Evolver(
 			bestFitness = measuredPopulation.head.fitness
 			if (lastBestFitness != bestFitness) {
 				pop.writeToFile(fileName = Parameters.workDirectory.resolve(s"population_gen${Population.generation}.json").toString)
-				CircuitPlotter.plotCircuit(measuredPopulation.head.circuit, Population.generation)
+				CircuitPlotter.plotCircuit(measuredPopulation.head, Population.generation)
 				println("Best individual:")
 				println(s"\nGenerator:${measuredPopulation.head.generator.toString}")
 				println(s"\nCircuit:${measuredPopulation.head.circuit.toUndecoratedSpice}")
