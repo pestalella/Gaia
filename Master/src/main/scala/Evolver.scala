@@ -1,4 +1,3 @@
-import java.nio.file.Paths
 
 class Evolver(
 	val population: Population
@@ -20,6 +19,12 @@ class Evolver(
 				println(s"\nCircuit:${measuredPopulation.head.circuit.toUndecoratedSpice}")
 				lastBestFitness = bestFitness
 			}
+			val gb = 1024 * 1024 * 1024.0
+			val runtime = Runtime.getRuntime
+			println(f"** Used Memory: ${(runtime.totalMemory - runtime.freeMemory) / gb}%6.2f GB")
+			println(f"** Free Memory: ${runtime.freeMemory / gb}%6.2f GB")
+			println(f"** Total Memory: ${runtime.totalMemory / gb}%5.2f GB")
+			println(f"** Max Memory: ${runtime.maxMemory / gb}%7.2f GB")
 			println("Generating new population")
 			pop = Population.nextPopulation(measuredPopulation)
 		} while (bestFitness > Parameters.targetFitness)
@@ -27,5 +32,5 @@ class Evolver(
 }
 
 object Evolver {
-	def apply(population: Population): Evolver = new Evolver(population)
+	def apply(population: Population): Evolver = new Evolver(population = population)
 }

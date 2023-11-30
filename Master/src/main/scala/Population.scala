@@ -1,13 +1,16 @@
 
 import java.io.PrintWriter
 import java.util.concurrent.TimeUnit
-import ujson._
+
+import org.apache.spark.util._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import scala.util.{Try, Success, Failure}
+
+import ujson._
 
 import GaiaCommon.{FitnessError, FitnessResult}
 
@@ -16,7 +19,8 @@ case class Population(members: Seq[PopulationMember]) {
 	def measurePopulationFitness(): Seq[PopulationMember] = {
 		val n = System.nanoTime()
 		//		val fitEval = GaiaCommon.LowPassFilter(limitFreq = 5000)
-		val measureResult = Population.evaluator.calcFitness(members map (m => m.circuit.toSpice(m.circuitId)))
+		val circuits = members map (m => m.circuit.toSpice(m.circuitId))
+		val measureResult = Population.evaluator.calcFitness(circuits)
 		println("Population: measurement request sent")
 		val measuredFitness = Await.result(measureResult, 20000 seconds)
 		val measuredPop = Try {
@@ -76,9 +80,11 @@ object Population {
 		CircuitResistor.reset()
 		CircuitCapacitor.reset()
 		CircuitInductor.reset()
-		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
-		val w1 = CircuitWire(nodes = externalNodes)
-		CircuitBuilder.applyCommand(w1, generator).cleanCircuit(externalNodes)
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"), CircuitNode("0"))
+		val w1 = CircuitWire(nodes = Seq(CircuitNode("A"), CircuitNode("B")))
+		val generatedCircuit = CircuitBuilder.applyCommand(w1, generator)
+		val cleanCircuit = generatedCircuit.cleanCircuit(externalNodes)
+		cleanCircuit
 	}
 
 	private def selectMember(membersWithAccumFitness: Seq[PopulationMember]): PopulationMember = {
@@ -98,6 +104,8 @@ object Population {
 		val nodeNameSize = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.nodes.foldLeft(0)((accum, node) => accum + node.name.length))
 		println("## Population statistics:")
 		println(s"#### Total AST nodes: $totalNodes")
+		println(s"#### Population total size: ${SizeEstimator.estimate(sortedPop) / 1024} kB")
+		println(s"#### Circuits total size: ${SizeEstimator.estimate(sortedPop map (_.circuit)) / 1024} kB")
 		println(s"#### Total circuit components: $totalComponents")
 		println(s"#### Total circuit nodes: $totalCircuitNodes")
 		println(s"#### Node name size: ${nodeNameSize / 1024} kB")
@@ -147,7 +155,7 @@ object Population {
 
 	def fromFile(fileName: String): Population = {
 		import scala.util.Using
-		Using(io.Source.fromFile(fileName)) {
+		Using(scala.io.Source.fromFile(fileName)) {
 			source => {
 				val inputPopString = source.mkString
 				println("File read. Converting to JSON")
