@@ -9,14 +9,9 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.7.0"
 
-//assemblyMergeStrategy in assembly := {
-// case PathList("META-INF", _*) => MergeStrategy.discard
-// case _                        => MergeStrategy.first
-//}
-
-assemblyMergeStrategy in assembly := {
+ThisBuild / assemblyMergeStrategy := {
 	case PathList("META-INF", xs@_*) => MergeStrategy.discard
 	case x =>
-		val oldStrategy = (assemblyMergeStrategy in assembly).value
+		val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
 		oldStrategy(x)
 }

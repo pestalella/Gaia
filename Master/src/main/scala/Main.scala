@@ -1,4 +1,4 @@
-import java.nio.file.{Files,Paths}
+import java.nio.file.Files
 
 object Main {
   def main(args: Array[String]): Unit = {
