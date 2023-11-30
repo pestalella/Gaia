@@ -5,6 +5,20 @@ class Circuit(
 	val nodes: Seq[CircuitNode],
 	val components: Seq[CircuitComponent]
 ) {
+
+	def remapNodes(remapping: Seq[(CircuitNode, Int)], nodesToRemap: Seq[CircuitNode]): Seq[CircuitNode] = {
+		remapping.foldLeft(nodesToRemap)((accum, nodeMapping) =>
+			accum map (node =>
+				if (node.name == nodeMapping._1.name) CircuitNode((nodeMapping._2 + 1).toString) else node))
+	}
+
+	def enumerateNodes(externalNodes: Seq[CircuitNode]): Circuit = {
+		val remapping = nodes.filterNot(n => externalNodes.contains(n)).zipWithIndex
+		val remappedComponents = components map (component => component.copy(nodes = remapNodes(remapping, component.nodes)))
+		val remappedNodes = remapNodes(remapping, nodes)
+		Circuit(nodes = remappedNodes, components = remappedComponents)
+	}
+
 	def combined(rhs: Circuit): Circuit = {
 		val newCirc = new Circuit(
 			nodes = (nodes ++ rhs.nodes).distinct,
@@ -20,7 +34,7 @@ class Circuit(
 		new Circuit(
 			nodes = noWires.nodes,
 			components = noWires.components filter (comp => comp.nodes.distinct.length != 1)
-		)
+		).enumerateNodes(externalNodes)
 	}
 
 	private def removeWired(externalNodes: Seq[CircuitNode]): Circuit = {
@@ -32,8 +46,12 @@ class Circuit(
 				this
 			else {
 				val wireToRemove = circuitWires.head
-				val nodeCandidates = wireToRemove.nodes filter {!externalNodes.contains(_)}
-				val filteredComponents = components filter {_ != wireToRemove}
+				val nodeCandidates = wireToRemove.nodes filter {
+					!externalNodes.contains(_)
+				}
+				val filteredComponents = components filter {
+					_ != wireToRemove
+				}
 				if (nodeCandidates.isEmpty)
 					new Circuit(
 						nodes = nodes,
