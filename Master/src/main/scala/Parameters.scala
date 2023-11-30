@@ -1,7 +1,7 @@
 import java.nio.file.{Path, Paths}
 
 object Parameters {
-	def mutationRate: Float = 0.3f
+	def mutationRate: Float = 0.01f
 	def maxChildHeight : Int = 10
 
 	def populationSize: Int = 50000
