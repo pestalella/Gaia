@@ -15,6 +15,8 @@ object CircuitBuilder {
 				applyCommand(comp, cmd)
 			case cmd: ASTVIA0 =>
 				applyCommand(comp, cmd)
+			case cmd: ASTVIA1 =>
+				applyCommand(comp, cmd)
 			case _: ASTEnd => applyCommand(comp)
 		}
 	}
@@ -70,6 +72,19 @@ object CircuitBuilder {
 	def applyCommand(comp: CircuitComponent, cmd: ASTVIA0): Circuit = {
 		val midNode = comp.nodes.head.combined(comp.nodes.last)
 		val viaNode = CircuitNode.via0
+		val oldComponentNewNodes = Seq(midNode, comp.nodes.last)
+		val oldComponentCircuit = Circuit(
+			nodes = oldComponentNewNodes,
+			components = Seq(comp.copy(nodes = oldComponentNewNodes))
+		)
+		val lhs = applyCommand(CircuitWire(Seq(comp.nodes.head, midNode)), cmd.aCons)
+		val via = applyCommand(CircuitWire(Seq(midNode, viaNode)), cmd.vCons)
+		lhs.combined(oldComponentCircuit).combined(via)
+	}
+
+	def applyCommand(comp: CircuitComponent, cmd: ASTVIA1): Circuit = {
+		val midNode = comp.nodes.head.combined(comp.nodes.last)
+		val viaNode = CircuitNode.via1
 		val oldComponentNewNodes = Seq(midNode, comp.nodes.last)
 		val oldComponentCircuit = Circuit(
 			nodes = oldComponentNewNodes,

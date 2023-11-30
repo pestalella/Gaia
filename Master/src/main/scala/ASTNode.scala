@@ -2,7 +2,7 @@ import ujson.Obj
 
 object ASTNodeType extends Enumeration {
 	type ASTNodeType = Value
-	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, End = Value
+	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, Via1, End = Value
 }
 
 abstract class ASTNode(
@@ -101,6 +101,8 @@ abstract class ASTNode(
 			 ASTParallel.fromJson(inputJson)
 		 else if (nType == "Via0")
 			 ASTVIA0.fromJson(inputJson)
+		 else if (nType == "Via1")
+			 ASTVIA1.fromJson(inputJson)
 		 else if (nType == "ThreeGND")
 			 ASTThreeGND.fromJson(inputJson)
 		 else if (nType == "End")
@@ -353,6 +355,28 @@ object ASTVIA0 {
 			ASTNode.fromJson(cons.obj)
 		}).toSeq
 		new ASTVIA0(
+			aCons = inputConstructors.head,
+			vCons = inputConstructors(1),
+		)
+	}
+}
+
+case class ASTVIA1(
+	aCons: ASTNode,
+	vCons: ASTNode
+) extends ASTNode(nodeType = ASTNodeType.Via1, constructors = Seq(aCons, vCons)) {
+	override def copy(constructors: Seq[ASTNode] = Seq(aCons, vCons)): ASTNode = ASTVIA1(
+		aCons = constructors.head,
+		vCons = constructors(1)
+	)
+}
+
+object ASTVIA1 {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputConstructors = (for (cons <- inputJson("constructors").arr) yield {
+			ASTNode.fromJson(cons.obj)
+		}).toSeq
+		new ASTVIA1(
 			aCons = inputConstructors.head,
 			vCons = inputConstructors(1),
 		)

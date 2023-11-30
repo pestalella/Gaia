@@ -10,6 +10,8 @@ object CircuitNode {
 	def ground: CircuitNode = CircuitNode("0")
 	def via0: CircuitNode = CircuitNode("VIA0")
 
+	def via1: CircuitNode = CircuitNode("VIA1")
+
 	def fromJson(inputJson: ujson.Obj): CircuitNode =
 		CircuitNode(name = inputJson("name").toString())
 }
