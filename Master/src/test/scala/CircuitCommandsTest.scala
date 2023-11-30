@@ -5,7 +5,6 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		CircuitResistor.reset()
 		CircuitCapacitor.reset()
 		CircuitInductor.reset()
-		Circuit.reset()
 	}
 
 	test(testName = "Circuit.toSpiceOneResistor") {
