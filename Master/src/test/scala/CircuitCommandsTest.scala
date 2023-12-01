@@ -83,7 +83,7 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
 		val w1 = CircuitWire(nodes = externalNodes)
 		val circuit = CircuitBuilder.applyCommand(w1, ASTInductor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
-		assert(circuit.toUndecoratedSpice == "L1 A B 100uH")
+		assert(circuit.toUndecoratedSpice == "L2 A B 100uH")
 	}
 
 	test(testName = "Circuit.oneASTEndJSON") {
@@ -110,7 +110,7 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
 		val w1 = CircuitWire(nodes = externalNodes)
 		val circuit = CircuitBuilder.applyCommand(w1, ASTResistor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
-		assert(circuit.toJson.toString == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Resistor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":1}],\"circuitNumber\":1}")
+		assert(circuit.toJson.toString == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Resistor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":2}]}")
 	}
 
 	test(testName = "Circuit.oneInductorCircuitToJSON") {
@@ -118,6 +118,6 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		val w1 = CircuitWire(nodes = externalNodes)
 		val circuit = CircuitBuilder.applyCommand(w1, ASTInductor(cCons = ASTEnd(), value = 7)).cleanCircuit(externalNodes)
 		CircuitInductor.reset()
-		assert(circuit.components == Seq(CircuitInductor(nodes=externalNodes, value=7)))
-		assert(circuit.toJson.toString() == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Inductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":1}],\"circuitNumber\":1}")
+		assert(circuit.components == Seq(CircuitInductor(nodes = externalNodes, value = 7, inductorNumber = 2)))
+		assert(circuit.toJson.toString() == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Inductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":2}]}")
 	}}
