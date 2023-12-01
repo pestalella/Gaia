@@ -9,6 +9,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.7.0"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"
+
 ThisBuild / assemblyMergeStrategy := {
 	case PathList("META-INF", xs@_*) => MergeStrategy.discard
 	case x =>
