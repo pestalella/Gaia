@@ -1,4 +1,4 @@
-import GaiaCommon.{EvalCommand, FitnessCalculator, FitnessError, FitnessResult, NodeStartAcknowledge, NodeStartRequest}
+import GaiaCommon.{EvalCommand, FitnessError, FitnessResult, NodeStartAcknowledge, NodeStartRequest}
 import akka.actor.{Actor, ActorRef, Status}
 import akka.event.Logging
 import akka.util.Timeout
@@ -42,7 +42,7 @@ class FitnessEvaluatorActor extends Actor {
 	}
 
 	private def runCommand(command: EvalCommand, sender: ActorRef): Future[PendingResponse] = Future {
-		val fitEval = GaiaCommon.LowPassFilter(limitFreq = 5000)
+		val fitEval = LowPassFilter(limitFreq = 5000)
 		println("Starting measurement")
 		val measurements = command.circuits.zipWithIndex.par.map(m =>
 			(m._2, eval.calcFitness(m._1, fitEval))).toIndexedSeq

@@ -1,5 +1,5 @@
-import GaiaCommon.{SimDataPoint, LowPassFilter}
 import org.scalatest.funsuite.AnyFunSuiteLike
+import GaiaCommon.SimDataPoint
 
 class LowPassFilterTest extends AnyFunSuiteLike {
 

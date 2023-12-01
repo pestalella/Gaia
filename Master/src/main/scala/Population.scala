@@ -18,7 +18,6 @@ case class Population(members: Seq[PopulationMember]) {
 	//	private val evaluator = CircuitEvaluator
 	def measurePopulationFitness(): Seq[PopulationMember] = {
 		val n = System.nanoTime()
-		//		val fitEval = GaiaCommon.LowPassFilter(limitFreq = 5000)
 		val circuits = members map (m => m.circuit.toSpice(m.circuitId))
 		val measureResult = Population.evaluator.calcFitness(circuits)
 		println("Population: measurement request sent")

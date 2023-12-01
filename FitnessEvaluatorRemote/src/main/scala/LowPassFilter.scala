@@ -1,4 +1,4 @@
-package GaiaCommon
+import GaiaCommon.SimDataPoint
 
 class LowPassFilter(val limitFreq: Double) extends FitnessCalculator {
 	override def calc(simulationData: Seq[SimDataPoint]): Double = {

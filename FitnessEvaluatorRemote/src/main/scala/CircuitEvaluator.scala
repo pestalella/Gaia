@@ -1,4 +1,4 @@
-import GaiaCommon.{FitnessCalculator, SimDataPoint}
+import GaiaCommon.SimDataPoint
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
