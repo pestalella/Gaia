@@ -15,19 +15,19 @@ object SendMoreWork
 case class PendingResponse(transactionID: Int, requester: ActorRef)
 case class AddWork(request: EvalCommand)
 
-class LocalFitnessRequester() extends Actor {
+class FitnessRequester() extends Actor {
 	//	private val path = "akka://RemoteFitnessSystem@10.0.200.227:4444/user/FitnessEvaluatorActor"
 	context.setReceiveTimeout(30 seconds)
 	private val log = Logging(context.system, this)
-	private var pendingWork = new mutable.Queue[WorkRequest]()
+	private val pendingWork = new mutable.Queue[WorkRequest]()
 	private var pendingResponses = new mutable.Queue[PendingResponse]()
-	private var idleNodes = new mutable.Queue[ActorRef]()
+	private val idleNodes = new mutable.Queue[ActorRef]()
 
 	def receive: Receive = identifying
 
 	def identifying: Receive = {
 		case AddWork(w) =>
-			log.info(s"Added work to the pending work queue before INIT")
+			//			println(s"Got work to do while identifying workers, with trID=${w.transactionID}")
 			pendingWork.enqueue(WorkRequest(w, sender))
 		case Init =>
 			log.info("INIT: waiting for remote actor")
@@ -36,7 +36,6 @@ class LocalFitnessRequester() extends Actor {
 			idleNodes.enqueue(sender())
 			println(s"A new remote actor sent a start message [${sender().path.toString}")
 			sender ! NodeStartAcknowledge
-
 			context.become(active)
 			context.setReceiveTimeout(Duration.Undefined)
 			self ! Start
@@ -55,8 +54,8 @@ class LocalFitnessRequester() extends Actor {
 
 	def active: Receive = {
 		case AddWork(w) =>
+			//			println(s"Got work to do, with trID=${w.transactionID}")
 			if (idleNodes.nonEmpty) {
-
 				pendingResponses enqueue PendingResponse(transactionID = w.transactionID, requester = sender)
 				sendWork(w)
 			} else {
@@ -95,7 +94,7 @@ class LocalFitnessRequester() extends Actor {
 					pendingResponse.requester ! r
 					pendingResponses = pendingResponses filterNot (p => p.transactionID == r.transactionID)
 					if (pendingWork.isEmpty) {
-						println("Pending work queue is empty. Labeling the node as idle")
+						// Pending work queue is empty. Labeling the node as idle
 						idleNodes.enqueue(resultSender)
 					} else {
 						//						println(s"There's pending work in the queue. Sending it to ${resultSender.path.toString}")

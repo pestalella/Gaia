@@ -1,6 +1,5 @@
 
 import java.io.PrintWriter
-import java.util.concurrent.TimeUnit
 
 import org.apache.spark.util._
 
@@ -15,18 +14,15 @@ import ujson._
 import GaiaCommon.{FitnessError, FitnessResult}
 
 case class Population(members: Seq[PopulationMember]) {
-	def measurePopulationFitness(): Seq[PopulationMember] = {
-		val n = System.nanoTime()
+	def measurePopulationFitness(evaluator: FitnessManager): Seq[PopulationMember] = {
 		val circuits = members map (m => m.circuit.toSpice(m.circuitId))
-		val measureResult = Population.evaluator.calcFitness(circuits)
-		println("Population: measurement request sent")
+		val measureResult = evaluator.calcFitness(circuits)
+		//		println("Population: measurement request sent")
 		val measuredFitness = Await.result(measureResult, 20000 seconds)
 		val measuredPop = Try {
 			members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2 + (memberFitness._1.circuit.components.size * 1000)))
 		}
-		println("Population: measurement received and prepared")
-		val n1 = System.nanoTime()
-		println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
+		//		println("Population: measurement received and prepared")
 		measuredPop match {
 			case Success(measured) => measured.sortWith((a, b) => a.fitness < b.fitness)
 			case Failure(s) =>
@@ -53,9 +49,6 @@ case class Population(members: Seq[PopulationMember]) {
 }
 
 object Population {
-	var generation = 0
-
-	val evaluator = new LocalFitnessMaster
 	println("Population: evaluator created")
 
 	def apply(members: Seq[PopulationMember]): Population = {
@@ -110,8 +103,8 @@ object Population {
 	}
 
 	def nextPopulation(sortedPop: Seq[PopulationMember]): Population = {
-		println(s"Generation $generation fitness: ${sortedPop.head.fitness}")
-		printPopulationStatistics(sortedPop)
+		//		println(s"Fitness: ${sortedPop.head.fitness}")
+		//		printPopulationStatistics(sortedPop)
 		val accummulatedFitness = sortedPop.tail.scanLeft(sortedPop.head.copy(fitness = 1.0 / sortedPop.head.fitness))(
 			(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
 		val newPop = (for (_ <- 1 until Parameters.populationSize / 2 + 1) yield {
@@ -135,7 +128,6 @@ object Population {
 				)
 			)
 		}).flatten.tail :+ sortedPop.head
-		generation += 1
 		Population(newPop)
 	}
 
