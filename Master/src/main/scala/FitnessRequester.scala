@@ -48,8 +48,6 @@ class FitnessRequester() extends Actor {
 		val worker = idleNodes.dequeue()
 		//		println(s"Got work to send. Sending it to ${worker.path.toString}.")
 		worker ! work
-		// Return the worker to the end of the queue of workers
-		//idleNodes.enqueue(worker)
 	}
 
 	def active: Receive = {

@@ -19,7 +19,7 @@ class FitnessEvaluatorActor extends Actor {
 
 	def receive: Receive = {
 		case ConnectToMaster =>
-			val path = "akka://LocalFitnessSystem@10.0.200.226:5555/user/LocalFitnessRequester"
+			val path = "akka://LocalFitnessSystem@10.0.200.226:5555/user/FitnessRequester"
 			implicit val resolveTimeout: Timeout = Timeout(5 seconds)
 			for (master: ActorRef <- context.actorSelection(path).resolveOne()) {
 				println("Found master node")
