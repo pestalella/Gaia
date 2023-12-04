@@ -1,8 +1,6 @@
 
 import java.io.PrintWriter
 
-import org.apache.spark.util._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -95,8 +93,6 @@ object Population {
 		val nodeNameSize = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.nodes.foldLeft(0)((accum, node) => accum + node.name.length))
 		println("## Population statistics:")
 		println(s"#### Total AST nodes: $totalNodes")
-		println(s"#### Population total size: ${SizeEstimator.estimate(sortedPop) / 1024} kB")
-		println(s"#### Circuits total size: ${SizeEstimator.estimate(sortedPop map (_.circuit)) / 1024} kB")
 		println(s"#### Total circuit components: $totalComponents")
 		println(s"#### Total circuit nodes: $totalCircuitNodes")
 		println(s"#### Node name size: ${nodeNameSize / 1024} kB")

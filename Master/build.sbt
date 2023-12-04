@@ -11,9 +11,6 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.7.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-serialization-jackson" % "2.7.0"
-//libraryDependencies += "com.fasterxml.jackson.core" %% "jackson-core-2.15.3"
-//libraryDependencies += "com.typesafe.akka" %% "akka-protobuf" % "2.7.0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.0"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % "test"
 
 ThisBuild / assemblyMergeStrategy := {
