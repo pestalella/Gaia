@@ -17,11 +17,10 @@ class Evolver(
 			val n = System.nanoTime()
 			demes = demes.zipWithIndex.par.map(indexedIsland => {
 				val island = indexedIsland._1
-				//for (_ <- 1 to Parameters.numGenerations) {
 				println(s"Measuring deme (${island.column}, ${island.row}) fitness")
 				val measuredPopulation = island.measurePopulationFitness(evaluator = evaluator)
 				demeFitness(indexedIsland._2) = measuredPopulation.head
-				new Island(row = island.row, column = island.column, population = Population.nextPopulation(measuredPopulation))
+				island.advancePopulation(measuredPopulation)
 			}).toIndexedSeq
 			val n1 = System.nanoTime()
 			println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")

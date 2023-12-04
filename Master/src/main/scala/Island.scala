@@ -11,4 +11,7 @@ class Island(
 	def measurePopulationFitness(evaluator: FitnessManager): Seq[PopulationMember] = {
 		population.measurePopulationFitness(evaluator)
 	}
+
+	def advancePopulation(measuredPopulation: Seq[PopulationMember]): Island =
+		new Island(row = row, column = column, population = Population.nextPopulation(measuredPopulation))
 }
