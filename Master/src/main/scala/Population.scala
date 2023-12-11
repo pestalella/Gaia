@@ -76,16 +76,6 @@ object Population {
 		cleanCircuit
 	}
 
-	private def selectMember(membersWithAccumFitness: Seq[PopulationMember]): PopulationMember = {
-		val totalFitness = membersWithAccumFitness.last.fitness
-		val selProb = scala.util.Random.nextFloat()*totalFitness
-		var accumWeight = 0.0
-		membersWithAccumFitness.find(m => {
-			accumWeight = accumWeight + m.fitness
-			accumWeight > selProb
-		}).get
-	}
-
 	def printPopulationStatistics(sortedPop: Seq[PopulationMember]): Unit = {
 		val totalNodes = sortedPop.foldLeft(0)((accum, m) => accum + m.generator.nodeCount)
 		val totalComponents = sortedPop.foldLeft(0)((accum, m) => accum + m.circuit.components.size)
@@ -99,13 +89,11 @@ object Population {
 	}
 
 	def nextPopulation(sortedPop: Seq[PopulationMember]): Population = {
-		//		println(s"Fitness: ${sortedPop.head.fitness}")
-		//		printPopulationStatistics(sortedPop)
 		val accummulatedFitness = sortedPop.tail.scanLeft(sortedPop.head.copy(fitness = 1.0 / sortedPop.head.fitness))(
 			(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
 		val newPop = (for (_ <- 1 until Parameters.populationSize / 2 + 1) yield {
-			val parent1 = Population.selectMember(accummulatedFitness)
-			val parent2 = Population.selectMember(accummulatedFitness)
+			val parent1 = PopulationUtils.selectMember(accummulatedFitness)
+			val parent2 = PopulationUtils.selectMember(accummulatedFitness)
 			val Seq(candidate1, candidate2) = ASTOperations.crossover(parent1.generator, parent2.generator)
 			val child1 = ASTOperations.mutate(candidate1)
 			val child2 = ASTOperations.mutate(candidate2)

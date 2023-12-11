@@ -19,13 +19,8 @@ object Main {
     //      }
     //    }
     Evolver(
-      demes = Seq(
-        Population.initialPopulation(),
-        Population.initialPopulation(),
-        Population.initialPopulation(),
-        Population.initialPopulation()
-      ),
-      columns = 2
+      demes = for (_ <- 1 to 9) yield Population.initialPopulation(),
+      columns = 3
     ).run()
   }
 }

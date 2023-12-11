@@ -5,13 +5,15 @@ class Island(
 	val column: Int,
 	val population: Population
 ) {
-	val inbound = new scala.collection.mutable.Queue[PopulationMember]()
-	val outbound = new scala.collection.mutable.Queue[PopulationMember]()
-
+	var bestIndividual: PopulationMember = population.members.head
 	def measurePopulationFitness(evaluator: FitnessManager): Seq[PopulationMember] = {
-		population.measurePopulationFitness(evaluator)
+		val measuredPop = population.measurePopulationFitness(evaluator)
+		bestIndividual = measuredPop.head
+		println(s"Best individual fitness on island ($column, $row): ${bestIndividual.fitness}")
+		measuredPop
 	}
 
-	def advancePopulation(measuredPopulation: Seq[PopulationMember]): Island =
+	def advancePopulation(measuredPopulation: Seq[PopulationMember]): Island = {
 		new Island(row = row, column = column, population = Population.nextPopulation(measuredPopulation))
+	}
 }

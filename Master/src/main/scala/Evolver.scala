@@ -1,55 +1,92 @@
 import Evolver.evaluator
 
 import java.util.concurrent.TimeUnit
-
-import scala.collection.parallel.CollectionConverters._
-import scala.concurrent.ExecutionContext.Implicits.global
+import collection.mutable.Buffer
+import collection.parallel.CollectionConverters._
+import concurrent.ExecutionContext.Implicits.global
+import scala.collection.mutable
 
 class Evolver(
-	val populations: Seq[Island]
+	val populations: Seq[Island],
+	val rows: Int,
+	val columns: Int
 ) {
 	var generation = 0
 	def run(): Unit = {
 		var lastBestFitness = 1E100
-		var demes = populations
-		val demeFitness = scala.collection.mutable.Map[Int, PopulationMember]()
+		var islands = populations
 		do {
 			val n = System.nanoTime()
-			demes = demes.zipWithIndex.par.map(indexedIsland => {
+			// Evaluates island populations.
+			val measuredPopulations = islands.zipWithIndex.par.map(indexedIsland => {
 				val island = indexedIsland._1
-				println(s"Measuring deme (${island.column}, ${island.row}) fitness")
-				val measuredPopulation = island.measurePopulationFitness(evaluator = evaluator)
-				demeFitness(indexedIsland._2) = measuredPopulation.head
-				island.advancePopulation(measuredPopulation)
+				println(s"Measuring island (${island.column}, ${island.row}) fitness")
+				island.measurePopulationFitness(evaluator = evaluator)
 			}).toIndexedSeq
-			val n1 = System.nanoTime()
-			println(s"Elapsed time: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
+			println("Measurement completed")
 
-			for (fitness <- demeFitness) {
-				if (lastBestFitness > fitness._2.fitness) {
-					val island = demes(fitness._1)
-					island.population.writeToFile(fileName =
+			for (measuredIsland <- islands) {
+				if (lastBestFitness > measuredIsland.bestIndividual.fitness) {
+					measuredIsland.population.writeToFile(fileName =
 						Parameters.workDirectory.resolve(
-							s"population_gen${generation}_island_${island.column}_${island.row}.json"
+							s"population_gen${generation}_island_${measuredIsland.column}_${measuredIsland.row}.json"
 						).toString
 					)
-					CircuitPlotter.plotCircuit(fitness._2, generation)
-					println(s"Best fitness was found in island ${fitness._1} value: ${fitness._2}")
-					//					println(s"\nGenerator:${fitness._2.generator.toString}")
-					//					println(s"\nCircuit:${fitness._2.circuit.toUndecoratedSpice}")
-					lastBestFitness = fitness._2.fitness
+					CircuitPlotter.plotCircuit(measuredIsland.bestIndividual, generation)
+					println(s"Best fitness was found in island (${measuredIsland.column}, ${measuredIsland.row}) value: ${measuredIsland.bestIndividual.fitness}")
+					lastBestFitness = measuredIsland.bestIndividual.fitness
 				}
 			}
-
-			val runtime = Runtime.getRuntime
-			val gb = 1024 * 1024 * 1024.0
-			println(f"** Used Memory: ${(runtime.totalMemory - runtime.freeMemory) / gb}%6.2f GB")
-			println(f"** Free Memory: ${runtime.freeMemory / gb}%6.2f GB")
-			println(f"** Total Memory: ${runtime.totalMemory / gb}%5.2f GB")
-			println(f"** Max Memory: ${runtime.maxMemory / gb}%7.2f GB")
+			println("Gathering island migrants")
+			val islandEmigrants = measuredPopulations map (measuredPopulation => {
+				val accummulatedFitness = measuredPopulation.tail.scanLeft(measuredPopulation.head.copy(fitness = 1.0 / measuredPopulation.head.fitness))(
+					(accumMember, member) => member.copy(fitness = 1.0 / member.fitness + accumMember.fitness))
+				val numEmigrants = (measuredPopulation.size * Parameters.migrantFraction).toInt
+				for (_ <- 1 to numEmigrants) yield {
+					PopulationUtils.selectMember(accummulatedFitness)
+				}
+			})
+			val immigrants = mutable.Buffer[Seq[PopulationMember]]()
+			for (_ <- populations) immigrants.append(Seq())
+			for ((emigrants, islandIdx) <- islandEmigrants.zipWithIndex) {
+				val column = islandIdx % columns
+				val row = islandIdx / columns
+				val north = ((row + rows - 1) % rows) * columns + column
+				val south = ((row + 1) % rows) * columns + column
+				val west = row * columns + (column - 1 + columns) % columns
+				val east = row * columns + (column + 1) % columns
+				val perIsland = emigrants.grouped(emigrants.size / 4).toSeq
+				immigrants(north) = immigrants(north) ++ perIsland(0)
+				immigrants(south) = immigrants(south) ++ perIsland(1)
+				immigrants(east) = immigrants(east) ++ perIsland(2)
+				immigrants(west) = immigrants(west) ++ perIsland(3)
+			}
+			println("Migration decided")
+			val n1 = System.nanoTime()
+			println(s"Elapsed time measuring populations: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
 			println("Generating new population")
+			islands = for ((island, immigrantsToIsland) <- islands zip immigrants) yield {
+				val islandIdx = ((island.row + 1) % rows) * columns + island.column
+				println(s"Adding ${immigrantsToIsland.size} immigrants to island (${island.column}, ${island.row})")
+				val nextPopulation = measuredPopulations(islandIdx).drop(immigrantsToIsland.size)
+				island.advancePopulation((nextPopulation ++ immigrantsToIsland).sortWith((a, b) => a.fitness < b.fitness))
+			}
+			val n2 = System.nanoTime()
+			println(s"Elapsed time generating new populations: ${TimeUnit.MILLISECONDS.convert(n2 - n1, TimeUnit.NANOSECONDS)}ms")
+
+			printMemoryStats()
+
 			generation += 1
 		} while (lastBestFitness > Parameters.targetFitness)
+	}
+
+	private def printMemoryStats(): Unit = {
+		val runtime = Runtime.getRuntime
+		val gb = 1024 * 1024 * 1024.0
+		println(f"** Used Memory: ${(runtime.totalMemory - runtime.freeMemory) / gb}%6.2f GB")
+		println(f"** Free Memory: ${runtime.freeMemory / gb}%6.2f GB")
+		println(f"** Total Memory: ${runtime.totalMemory / gb}%5.2f GB")
+		println(f"** Max Memory: ${runtime.maxMemory / gb}%7.2f GB")
 	}
 }
 
@@ -72,6 +109,6 @@ object Evolver {
 			}
 			new Island(population = p, row = curRow, column = curCol)
 		})
-		new Evolver(islands)
+		new Evolver(populations = islands, rows = scala.math.ceil(demes.size / columns).toInt, columns = columns)
 	}
 }
