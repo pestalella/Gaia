@@ -43,14 +43,8 @@ class FitnessEvaluatorActor extends Actor {
 
 	private def runCommand(command: EvalCommand, sender: ActorRef): Future[PendingResponse] = Future {
 		val fitEval = LowPassFilter(limitFreq = 5000)
-		println("Starting measurement")
 		val measurements = command.circuits.zipWithIndex.par.map(m =>
 			(m._2, eval.calcFitness(m._1, fitEval))).toIndexedSeq
-		println("Measurements done")
-		//		assert(measurements.foldLeft(true, -1)(
-		//			(last, cur) => (last._1 && (last._2 + 1 == cur._1), cur._1)
-		//		)._1)
-		//		println("Results are ordered")
 		PendingResponse(
 			result = FitnessResult(
 				transactionID = command.transactionID,
