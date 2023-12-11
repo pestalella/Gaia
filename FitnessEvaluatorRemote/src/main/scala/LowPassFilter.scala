@@ -6,7 +6,7 @@ class LowPassFilter(val limitFreq: Double) extends FitnessCalculator {
 			val dbMagnitude = 20 * scala.math.log10(dataPoint.magnitude + 0.0000001)
 			SimDataPoint(
 				frequency = dataPoint.frequency,
-				magnitude = if (dbMagnitude.isNaN) 1E10 else dbMagnitude,
+				magnitude = if (dbMagnitude.isNaN || dbMagnitude.isInfinity) 1E10 else dbMagnitude,
 				phase = dataPoint.phase)
 		})
 		dbData.foldLeft(0.0)((fitAccum, dataPoint) => fitAccum + dataPointFitness(dataPoint))
