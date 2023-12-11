@@ -21,7 +21,7 @@ class FitnessManager {
 		//		println("               Sending compute request")
 		//		println("#########################################################")
 
-		val jobPieces = circuits.sliding(1000, 1000)
+		val jobPieces = circuits.grouped(2000)
 		//		println(s"Sending ${jobPieces.length} pieces of work")
 		implicit val timeout: Timeout = Timeout(30000 seconds)
 		val eval = jobPieces.zipWithIndex map (work => {
