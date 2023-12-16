@@ -66,9 +66,9 @@ class Evolver(
 			println(s"Elapsed time measuring populations: ${TimeUnit.MILLISECONDS.convert(n1 - n, TimeUnit.NANOSECONDS)}ms")
 			println("Generating new population")
 			islands = for ((island, immigrantsToIsland) <- islands zip immigrants) yield {
-				val islandIdx = ((island.row + 1) % rows) * columns + island.column
+				val islandIdx = island.row * columns + island.column
 				println(s"Adding ${immigrantsToIsland.size} immigrants to island (${island.column}, ${island.row})")
-				val nextPopulation = measuredPopulations(islandIdx).drop(immigrantsToIsland.size)
+				val nextPopulation = measuredPopulations(islandIdx).dropRight(immigrantsToIsland.size)
 				island.advancePopulation((nextPopulation ++ immigrantsToIsland).sortWith((a, b) => a.fitness < b.fitness))
 			}
 			val n2 = System.nanoTime()
