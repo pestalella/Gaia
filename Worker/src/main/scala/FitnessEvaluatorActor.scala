@@ -4,22 +4,21 @@ import akka.event.Logging
 import akka.util.Timeout
 
 import scala.language.postfixOps
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.parallel.CollectionConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 case class PendingResponse(result: FitnessResult, sender: ActorRef)
 
 class FitnessEvaluatorActor extends Actor {
-	//	private val eval = DummyEval
 	private val eval = CircuitEvaluator
 	private val log = Logging(this)
 
 	def receive: Receive = {
 		case ConnectToMaster =>
-			val path = "akka://LocalFitnessSystem@10.0.200.226:5555/user/FitnessRequester"
+			val path = "akka://LocalFitnessSystem@localhost:5555/user/FitnessRequester"
 			implicit val resolveTimeout: Timeout = Timeout(5 seconds)
 			for (master: ActorRef <- context.actorSelection(path).resolveOne()) {
 				println("Found master node")

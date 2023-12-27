@@ -19,9 +19,9 @@ class LowPassFilter(val limitFreq: Double) extends FitnessCalculator {
 			if (scala.math.abs(simDataPoint.magnitude) < 0.0001)
 				0
 			else if (scala.math.abs(simDataPoint.magnitude) < 0.6)
-				scala.math.abs(simDataPoint.magnitude) * 10
+				scala.math.abs(simDataPoint.magnitude)
 			else
-				scala.math.abs(simDataPoint.magnitude) * 100
+				scala.math.abs(simDataPoint.magnitude) * 10
 		} else {
 			if (simDataPoint.magnitude < -120.0)
 				0

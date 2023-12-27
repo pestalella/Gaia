@@ -5,7 +5,7 @@ ThisBuild / trackInternalDependencies := TrackLevel.TrackAlways
 libraryDependencies += "com.lihaoyi" %% "ujson" % "3.1.2"
 
 lazy val GaiaCommon = project in file("GaiaCommon")
-lazy val FitnessEvaluatorRemote = (project in file("FitnessEvaluatorRemote"))
+lazy val Worker = (project in file("Worker"))
 	.settings(
 		mainClass := Some("RemoteFitnessEvaluator")
 	)
