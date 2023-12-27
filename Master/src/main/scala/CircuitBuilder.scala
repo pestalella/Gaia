@@ -7,6 +7,8 @@ object CircuitBuilder {
 				applyCommand(comp, cmd)
 			case cmd: ASTInductor =>
 				applyCommand(comp, cmd)
+			case cmd: ASTNPN =>
+				applyCommand(comp, cmd)
 			case cmd: ASTParallel =>
 				applyCommand(comp, cmd)
 			case cmd: ASTSeries =>
@@ -46,6 +48,21 @@ object CircuitBuilder {
 				value = cmd.value
 			),
 			cmd.cCons)
+	}
+
+	def applyCommand(comp: CircuitComponent, cmd: ASTNPN): Circuit = {
+		val baseNode = comp.nodes.head.combined(comp.nodes.last)
+		val collectorNode = baseNode.combined(comp.nodes.last)
+		val emitterNode = baseNode.combined(collectorNode)
+		val base = applyCommand(comp.copy(nodes = Seq(comp.nodes.head, baseNode)), cmd.baseCons)
+		val collector = applyCommand(CircuitWire(Seq(comp.nodes.last, collectorNode)), cmd.collectorCons)
+		val emitter = applyCommand(CircuitWire(Seq(emitterNode, CircuitNode.ground)), cmd.emitterCons)
+		val bjt = applyCommand(
+			CircuitNPN(
+				Seq(collectorNode, baseNode, emitterNode)
+			)
+		)
+		base.combined(collector).combined(emitter).combined(bjt)
 	}
 
 	def applyCommand(comp: CircuitComponent, cmd: ASTParallel): Circuit = {

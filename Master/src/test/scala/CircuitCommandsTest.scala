@@ -5,6 +5,7 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		CircuitResistor.reset()
 		CircuitCapacitor.reset()
 		CircuitInductor.reset()
+		CircuitNPN.reset()
 	}
 
 	test(testName = "Circuit.toSpiceOneResistor") {
@@ -120,4 +121,19 @@ class CircuitCommandsTest extends org.scalatest.funsuite.AnyFunSuiteLike with Be
 		CircuitInductor.reset()
 		assert(circuit.components == Seq(CircuitInductor(nodes = externalNodes, value = 7, inductorNumber = 2)))
 		assert(circuit.toJson.toString() == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"components\":[{\"type\":\"Inductor\",\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"}],\"value\":\"7.0\",\"ident\":2}]}")
-	}}
+	}
+
+	test(testName = "Circuit.oneNPNtoJSON") {
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
+		val w1 = CircuitWire(nodes = externalNodes)
+		val circuit = CircuitBuilder.applyCommand(w1, ASTNPN(collectorCons = ASTEnd(), emitterCons = ASTEnd(), baseCons = ASTEnd())).cleanCircuit(externalNodes)
+		assert(circuit.toJson.toString == "{\"nodes\":[{\"name\":\"A\"},{\"name\":\"B\"},{\"name\":\"1\"}]," +
+			"\"components\":[{\"type\":\"NPN\",\"nodes\":[{\"name\":\"B\"},{\"name\":\"A\"},{\"name\":\"1\"}],\"ident\":5}]}")
+	}
+	test(testName = "Circuit.oneNPNtoSpice") {
+		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"))
+		val w1 = CircuitWire(nodes = externalNodes)
+		val circuit = CircuitBuilder.applyCommand(w1, ASTNPN(collectorCons = ASTEnd(), emitterCons = ASTEnd(), baseCons = ASTEnd())).cleanCircuit(externalNodes)
+		assert(circuit.toUndecoratedSpice == "Q5 B A 1 PN2222A")
+	}
+}

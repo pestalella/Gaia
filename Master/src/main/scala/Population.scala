@@ -69,6 +69,7 @@ object Population {
 		CircuitResistor.reset()
 		CircuitCapacitor.reset()
 		CircuitInductor.reset()
+		CircuitNPN.reset()
 		val externalNodes = Seq(CircuitNode("A"), CircuitNode("B"), CircuitNode("0"))
 		val w1 = CircuitWire(nodes = Seq(CircuitNode("A"), CircuitNode("B")))
 		val generatedCircuit = CircuitBuilder.applyCommand(w1, generator)

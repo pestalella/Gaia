@@ -6,7 +6,7 @@ class Circuit(
 	val components: Seq[CircuitComponent]
 ) {
 
-	def remapNodes(remapping: Seq[(CircuitNode, Int)], nodesToRemap: Seq[CircuitNode]): Seq[CircuitNode] = {
+	private def remapNodes(remapping: Seq[(CircuitNode, Int)], nodesToRemap: Seq[CircuitNode]): Seq[CircuitNode] = {
 		remapping.foldLeft(nodesToRemap)((accum, nodeMapping) =>
 			accum map (node =>
 				if (node.name == nodeMapping._1.name) CircuitNode((nodeMapping._2 + 1).toString) else node))
@@ -87,6 +87,14 @@ class Circuit(
 		Seq(
 			s".TITLE TEST CIRCUIT $circuitId",
 			"",
+			"""
+*SRC=PN2222A;PN2222A;BJTs NPN; Si;  75.0V  0.800A  250MHz   Central Semi Central Semi
+.MODEL PN2222A  NPN (IS=2.20f NF=1.00 BF=240 VAF=114
+		+ IKF=0.293 ISE=2.73p NE=2.00 BR=4.00 NR=1.00
+		+ VAR=24.0 IKR=0.600 RE=0.194 RB=0.777 RC=77.7m
+		+ XTB=1.5 CJE=24.9p VJE=1.10 MJE=0.500 CJC=12.4p VJC=0.300
+		+ MJC=0.300 TF=371p TR=64.0n EG=1.12 )
+			""",
 			"VIN VS 0 DC 0 AC 1",
 			"RSOURCE VS A 1k",
 			"RLOAD B 0 1k",
@@ -102,6 +110,14 @@ class Circuit(
 		Seq(
 			s".TITLE TEST CIRCUIT $circuitId",
 			"",
+			"""
+*SRC=PN2222A;PN2222A;BJTs NPN; Si;  75.0V  0.800A  250MHz   Central Semi Central Semi
+.MODEL PN2222A  NPN (IS=2.20f NF=1.00 BF=240 VAF=114
+		+ IKF=0.293 ISE=2.73p NE=2.00 BR=4.00 NR=1.00
+		+ VAR=24.0 IKR=0.600 RE=0.194 RB=0.777 RC=77.7m
+		+ XTB=1.5 CJE=24.9p VJE=1.10 MJE=0.500 CJC=12.4p VJC=0.300
+		+ MJC=0.300 TF=371p TR=64.0n EG=1.12 )
+			""",
 			"VIN A 0 DC 0 AC 1",
 			"RLOAD B 0 1k",
 			toUndecoratedSpice,

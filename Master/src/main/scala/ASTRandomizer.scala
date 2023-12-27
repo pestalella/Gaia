@@ -1,7 +1,7 @@
 object ASTRandomizer {
 	private object Operation extends Enumeration {
 		type Operation = Value
-		val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, Via1 = Value
+		val Resistor, Capacitor, Inductor, NPN, Parallel, Series, ThreeGND, Via0, Via1 = Value
 	}
 	private def randomNumericConstant(minValue: Float = 0, maxValue: Float = 1): Float = {
 			scala.util.Random.nextFloat()*(maxValue-minValue) + minValue
@@ -14,6 +14,7 @@ object ASTRandomizer {
 				(10, Operation.Resistor),
 				(10, Operation.Capacitor),
 				(10, Operation.Inductor),
+				(10, Operation.NPN),
 				(10, Operation.Parallel),
 				(10, Operation.Series),
 				(10, Operation.ThreeGND),
@@ -44,6 +45,11 @@ object ASTRandomizer {
 			case Operation.Inductor => ASTInductor(
 				cCons = randomAST(maxDepth - 1),
 				value = randomNumericConstant(minValue = 3, maxValue = 11)
+			)
+			case Operation.NPN => ASTNPN(
+				collectorCons = randomAST(maxDepth - 1),
+				baseCons = randomAST(maxDepth - 1),
+				emitterCons = randomAST(maxDepth - 1)
 			)
 			case Operation.Parallel => ASTParallel(
 				aCons = randomAST(maxDepth - 1),

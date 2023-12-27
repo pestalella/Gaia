@@ -2,7 +2,7 @@ import ujson.Obj
 
 object ASTNodeType extends Enumeration {
 	type ASTNodeType = Value
-	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, Via0, Via1, End = Value
+	val Resistor, Capacitor, Inductor, Parallel, Series, ThreeGND, NPN, Via0, Via1, End = Value
 }
 
 abstract class ASTNode(
@@ -270,6 +270,30 @@ object ASTInductor {
 		new ASTInductor(
 			cCons = ASTNode.fromJson(inputCons.arr.head.obj),
 			value = inputJson("value").str.toFloat
+		)
+	}
+}
+
+case class ASTNPN(
+									 collectorCons: ASTNode,
+									 baseCons: ASTNode,
+									 emitterCons: ASTNode
+								 ) extends ASTNode(nodeType = ASTNodeType.NPN, constructors = Seq(collectorCons, baseCons, emitterCons)) {
+
+	override def copy(constructors: Seq[ASTNode] = Seq(collectorCons, baseCons, emitterCons)): ASTNode = ASTNPN(
+		collectorCons = constructors.head,
+		baseCons = constructors(1),
+		emitterCons = constructors(2)
+	)
+}
+
+object ASTNPN {
+	def fromJson(inputJson: Obj): ASTNode = {
+		val inputCons = inputJson("constructors")
+		new ASTNPN(
+			collectorCons = ASTNode.fromJson(inputCons.arr.head.obj),
+			baseCons = ASTNode.fromJson(inputCons.arr(1).obj),
+			emitterCons = ASTNode.fromJson(inputCons.arr(2).obj)
 		)
 	}
 }

@@ -22,6 +22,8 @@ object CircuitComponent {
 			CircuitResistor.fromJson(inputJson)
 		else if (cType == "Inductor")
 			CircuitInductor.fromJson(inputJson)
+		else if (cType == "NPN")
+			CircuitNPN.fromJson(inputJson)
 		else {
 			println(s"OMG, got a component of type $cType")
 			CircuitResistor(Seq(), 0)
@@ -40,7 +42,7 @@ case class CircuitCapacitor(
 	def copy(copyNodes: Seq[CircuitNode] = nodes): CircuitComponent =
 		CircuitCapacitor(copyNodes, value)
 	override def toSpice: String = Seq(
-		"C" + capacitorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToCapValue(value)
+		"C" + capacitorNumber.toString, (nodes map (_.toString)).mkString(" "), ValueUtils.valueToCapValue(value)
 	).mkString(" ")
 
 	override def toJson: Obj = Obj(
@@ -89,7 +91,7 @@ case class CircuitResistor(
 	def copy(copyNodes: Seq[CircuitNode] = nodes) : CircuitComponent =
 		CircuitResistor(copyNodes, value)
 	override def toSpice: String = Seq(
-		"R" + resistorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToResistorValue(value)
+		"R" + resistorNumber.toString, (nodes map (_.toString)).mkString(" "), ValueUtils.valueToResistorValue(value)
 	).mkString(" ")
 
 	override def toJson: Obj = Obj(
@@ -138,7 +140,7 @@ case class CircuitInductor(
 	def copy(copyNodes: Seq[CircuitNode] = nodes) : CircuitComponent =
 		CircuitInductor(copyNodes, value)
 	override def toSpice: String = Seq(
-		"L" + inductorNumber.toString, nodes.head, nodes.last, ValueUtils.valueToInductorValue(value)
+		"L" + inductorNumber.toString, (nodes map (_.toString)).mkString(" "), ValueUtils.valueToInductorValue(value)
 	).mkString(" ")
 
 	override def toJson: Obj = Obj(
@@ -147,7 +149,6 @@ case class CircuitInductor(
 		"value" -> value.toString,
 		"ident" -> inductorNumber
 	)
-
 }
 
 object CircuitInductor {
@@ -172,6 +173,52 @@ object CircuitInductor {
 		CircuitInductor(
 			nodes = inputNodes,
 			value = inputJson("value").str.toFloat,
+		)
+	}
+}
+
+case class CircuitNPN(
+											 nodes: Seq[CircuitNode],
+											 bjtNumber: Int
+										 ) extends CircuitComponent {
+	override def remapNodes(oldNodes: Seq[CircuitNode], newNode: CircuitNode): CircuitComponent = {
+		CircuitNPN(super.remapped(oldNodes, newNode))
+	}
+
+	def copy(copyNodes: Seq[CircuitNode] = nodes): CircuitComponent =
+		CircuitNPN(copyNodes)
+
+	override def toSpice: String = Seq(
+		"Q" + bjtNumber.toString, (nodes map (_.toString)).mkString(" "), "PN2222A"
+	).mkString(" ")
+
+	override def toJson: Obj = Obj(
+		"type" -> "NPN",
+		"nodes" -> ujson.Arr.from(nodes map (_.toJson)),
+		"ident" -> bjtNumber
+	)
+}
+
+object CircuitNPN {
+	private var counter = 0
+
+	def apply(
+						 nodes: Seq[CircuitNode]
+					 ): CircuitNPN = {
+		counter += 1
+		new CircuitNPN(nodes = nodes, bjtNumber = counter)
+	}
+
+	def reset(): Unit = {
+		counter = 0
+	}
+
+	def fromJson(inputJson: Obj): CircuitComponent = {
+		val inputNodes = (for (node <- inputJson("nodes").arr) yield {
+			CircuitNode.fromJson(node.obj)
+		}).toSeq
+		CircuitNPN(
+			nodes = inputNodes,
 		)
 	}
 }
