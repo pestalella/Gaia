@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/FitnessEvaluatorRemote.iml" filepath="$PROJECT_DIR$/.idea/modules/FitnessEvaluatorRemote.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/GaiaCommon.iml" filepath="$PROJECT_DIR$/.idea/modules/GaiaCommon.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Master.iml" filepath="$PROJECT_DIR$/.idea/modules/Master.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Worker.iml" filepath="$PROJECT_DIR$/.idea/modules/Worker.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gaia.iml" filepath="$PROJECT_DIR$/.idea/modules/gaia.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gaia-build.iml" filepath="$PROJECT_DIR$/.idea/modules/gaia-build.iml" />
     </modules>

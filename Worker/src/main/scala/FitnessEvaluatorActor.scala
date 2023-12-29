@@ -16,7 +16,9 @@ class FitnessEvaluatorActor extends Actor {
 	private val eval = CircuitEvaluator
 	private val log = Logging(this)
 
-	def receive: Receive = {
+	def receive:  Receive  = connectToMaster
+
+	def connectToMaster: Receive = {
 		case ConnectToMaster =>
 			val path = "akka://LocalFitnessSystem@localhost:5555/user/FitnessRequester"
 			implicit val resolveTimeout: Timeout = Timeout(5 seconds)
@@ -26,7 +28,10 @@ class FitnessEvaluatorActor extends Actor {
 			}
 		case NodeStartAcknowledge =>
 			println("The master node acknowledged our request")
-
+			context.become(connected)
+			context.setReceiveTimeout(Duration.Undefined)
+	}
+	def connected: Receive = {
 		case cmd: EvalCommand =>
 			println(s"Got a command with transaction ID = ${cmd.transactionID} and ${cmd.circuits.size} elements to process from ${sender().path.toString}")
 			val evaluation = runCommand(cmd, sender())

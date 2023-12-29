@@ -8,13 +8,13 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/FitnessEvaluatorRemote" />
             <option value="$PROJECT_DIR$/GaiaCommon" />
             <option value="$PROJECT_DIR$/Master" />
+            <option value="$PROJECT_DIR$/Worker" />
             <option value="$PROJECT_DIR$/project" />
           </set>
         </option>
-        <option name="sbtVersion" value="1.9.2" />
+        <option name="sbtVersion" value="1.9.8" />
       </SbtProjectSettings>
     </option>
   </component>

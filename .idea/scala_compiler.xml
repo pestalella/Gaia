@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="FitnessEvaluatorRemote,FitnessEvaluatorRemote.fiteval,Gaia,Gaia.RemoteFitnessEvaluator,GaiaCommon,GaiaCommon.common,Main,Master,RemoteFitnessEvaluator,RemoveFitnessEvaluator,common,fiteval,fitnessevaluatorremote,gaia,gaiaCommonModule,gaia_7267,gaiacommon,root" />
+    <profile name="sbt 1" modules="GaiaCommon,Master,Worker,gaia,gaia_5186" />
   </component>
 </project>
