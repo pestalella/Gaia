@@ -18,11 +18,11 @@ class Evolver(
 		do {
 			val n = System.nanoTime()
 			// Evaluates island populations.
-			val measuredPopulations = islands.zipWithIndex.par.map(indexedIsland => {
+			val measuredPopulations = islands.zipWithIndex.map(indexedIsland => {
 				val island = indexedIsland._1
 				println(s"Measuring island (${island.column}, ${island.row}) fitness")
 				island.measurePopulationFitness(evaluator = evaluator)
-			}).toIndexedSeq
+			})
 			println("Measurement completed")
 
 			for (measuredIsland <- islands) {

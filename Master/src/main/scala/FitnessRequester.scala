@@ -8,8 +8,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import scala.collection.mutable
 
-case object Start
-
 case class WorkRequest(work: EvalCommand, requester: ActorRef)
 object SendMoreWork
 case class PendingResponse(transactionID: Int, requester: ActorRef)
@@ -27,8 +25,8 @@ class FitnessRequester() extends Actor {
 
 	def identifying: Receive = {
 		case AddWork(w) =>
-			//			println(s"Got work to do while identifying workers, with trID=${w.transactionID}")
-			pendingWork.enqueue(WorkRequest(w, sender))
+			println(s"###### ERROR ###### Got work to do while identifying workers, with trID=${w.transactionID}")
+//			pendingWork.enqueue(WorkRequest(w, sender))
 		case Init =>
 			log.info("INIT: waiting for remote actor")
 		case NodeStartRequest =>
@@ -36,23 +34,19 @@ class FitnessRequester() extends Actor {
 			idleNodes.enqueue(sender())
 			println(s"A new remote actor sent a start message [${sender().path.toString}")
 			sender ! NodeStartAcknowledge
-			context.become(active)
+			context.become(connected)
 			context.setReceiveTimeout(Duration.Undefined)
-			self ! Start
+
+		case AreYouReady => sender ! false
 
 		case ReceiveTimeout => println("timeout")
 	}
 
-	private def sendWork(work: EvalCommand): Unit = {
-		// Get the first worker
-		val worker = idleNodes.dequeue()
-		//		println(s"Got work to send. Sending it to ${worker.path.toString}.")
-		worker ! work
-	}
+	def connected: Receive = {
+		case AreYouReady => sender ! true
 
-	def active: Receive = {
 		case AddWork(w) =>
-			//			println(s"Got work to do, with trID=${w.transactionID}")
+//			println(s"Got work to do, with trID=${w.transactionID}")
 			if (idleNodes.nonEmpty) {
 				pendingResponses enqueue PendingResponse(transactionID = w.transactionID, requester = sender)
 				sendWork(w)
@@ -62,29 +56,22 @@ class FitnessRequester() extends Actor {
 		case NodeStartRequest =>
 			// Write down the actor that sent the message
 			idleNodes.enqueue(sender())
-			println(s"A new remote actor sent a start message [${sender().path.toString}")
+			println(s"A new node sent a start message [${sender().path.toString}")
 			sender ! NodeStartAcknowledge
-		case Start =>
-			println(s"RECEIVED START from ${sender().path.toString}")
-			if (pendingWork.nonEmpty) {
-				val workRequest = pendingWork.dequeue()
-				pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
-				if (idleNodes.nonEmpty) {
-					sendWork(workRequest.work)
-				}
-			}
+			println(s"Sent ACK to node [${sender().path.toString}")
+			self ! SendMoreWork
 		case SendMoreWork =>
 			if (pendingWork.nonEmpty) {
 				if (idleNodes.nonEmpty) {
 					val workRequest = pendingWork.dequeue()
-					println(s"Sending work. TransID=${workRequest.work.transactionID}")
+//					println(s"Sending work. TransID=${workRequest.work.transactionID}")
 					pendingResponses enqueue PendingResponse(transactionID = workRequest.work.transactionID, requester = workRequest.requester)
 					sendWork(workRequest.work)
 				}
 			}
 		case r: FitnessResult =>
 			val resultSender = sender()
-			//			print(s"${r.transactionID} ")
+	//		println(s"Got result for trdID=${r.transactionID}")
 			//			println(s"Got FitnessResult from ${sender.path.toString}")
 			val respCandidate = pendingResponses.find(response => response.transactionID == r.transactionID)
 			respCandidate match {
@@ -103,10 +90,17 @@ class FitnessRequester() extends Actor {
 					self ! SendMoreWork
 				case None => log.warning(s"Received response with an unexpected transactionID: ${r.transactionID}")
 			}
-		case e: FitnessError => log.info(s"Got FitnessError: $e")
+		case e: FitnessError => log.error(e.message)
 
 		//		case Terminated(`actor`) =>
 		//			println("Receiver terminated")
 		//			context.system.terminate()
+	}
+
+	private def sendWork(work: EvalCommand): Unit = {
+		// Get the first worker
+		val worker = idleNodes.dequeue()
+		//		println(s"Got work to send. Sending it to ${worker.path.toString}.")
+		worker ! work
 	}
 }

@@ -18,9 +18,10 @@ object Main {
     //        Population.initialPopulation()
     //      }
     //    }
+    val columns = 4
     Evolver(
-      demes = for (_ <- 1 to 9) yield Population.initialPopulation(),
-      columns = 3
+      demes = for (_ <- 1 to columns*columns) yield Population.initialPopulation(),
+      columns = columns
     ).run()
   }
 }
