@@ -24,12 +24,16 @@ class FitnessEvaluatorActor extends Actor {
 			implicit val resolveTimeout: Timeout = Timeout(5 seconds)
 			for (master: ActorRef <- context.actorSelection(path).resolveOne()) {
 				println("Found master node")
+				context.watch(master)
 				master ! NodeStartRequest
 			}
 		case NodeStartAcknowledge =>
 			println("The master node acknowledged our request")
 			context.become(connected)
-			context.setReceiveTimeout(Duration.Undefined)
+			context.setReceiveTimeout(30 seconds)
+		case ReceiveTimeout =>
+			println("Couldn't connect to the master node. Retrying")
+			self ! ConnectToMaster
 	}
 	def connected: Receive = {
 		case cmd: EvalCommand =>
@@ -43,6 +47,11 @@ class FitnessEvaluatorActor extends Actor {
 					log.warning("FAILED TO GET A RESULT")
 					sender ! FitnessError(transactionID = cmd.transactionID, message = t.getMessage)
 			}
+		case ReceiveTimeout =>
+			println("Lost connection to Master. Reconnecting.")
+			context.become(connectToMaster)
+			context.setReceiveTimeout(30 seconds)
+			self ! ConnectToMaster
 	}
 
 	private def runCommand(command: EvalCommand, sender: ActorRef): Future[PendingResponse] = Future {
