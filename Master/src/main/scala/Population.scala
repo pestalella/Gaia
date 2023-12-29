@@ -15,8 +15,9 @@ case class Population(members: Seq[PopulationMember]) {
 	def measurePopulationFitness(evaluator: FitnessManager): Seq[PopulationMember] = {
 		val circuits = members map (m => m.circuit.toSpice(m.circuitId))
 		val measureResult = evaluator.calcFitness(circuits)
-		//		println("Population: measurement request sent")
+//		println("Population: measurement request sent")
 		val measuredFitness = Await.result(measureResult, 20000 seconds)
+		println(s"Population: measurement received. Size=${measuredFitness.size}")
 		val measuredPop = Try {
 			members zip measuredFitness map (memberFitness => memberFitness._1.copy(fitness = memberFitness._2 + (memberFitness._1.circuit.components.size * 1000)))
 		}

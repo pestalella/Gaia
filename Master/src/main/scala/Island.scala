@@ -9,7 +9,9 @@ class Island(
 	def measurePopulationFitness(evaluator: FitnessManager): Seq[PopulationMember] = {
 		val measuredPop = population.measurePopulationFitness(evaluator)
 		bestIndividual = measuredPop.head
-		println(s"Best individual fitness on island ($column, $row): ${bestIndividual.fitness}")
+		val median: Double = measuredPop(measuredPop.size/2).fitness
+		val average: Double = measuredPop.foldLeft(0.0)((total, popMember) => total + popMember.fitness)/measuredPop.size
+		println(s"Island ($column, $row): best:${bestIndividual.fitness} median:$median avg:$average")
 		measuredPop
 	}
 
